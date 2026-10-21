@@ -5,9 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="3300번">
+<meta name="apple-mobile-web-app-title" content="리무진 3300">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f172a">
-<title>3300번 다음 버스</title>
+<title>공항리무진 3300번 BUS</title>
 <style>
   :root{
     --bg:#f3f5f9; --card:#ffffff; --text:#0f172a; --sub:#64748b; --line:#e2e8f0;
@@ -24,7 +27,7 @@
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
     -webkit-font-smoothing:antialiased}
   .wrap{max-width:480px;margin:0 auto;padding:16px 16px calc(32px + env(safe-area-inset-bottom))}
-  header{display:flex;justify-content:space-between;align-items:flex-end;margin:8px 0 16px}
+  header{margin:4px 0 0}
   .route{font-size:13px;color:var(--sub);font-weight:600;letter-spacing:.02em}
   h1{margin:2px 0 0;font-size:26px;font-weight:800}
   h1 .no{color:var(--accent)}
@@ -61,6 +64,16 @@
   .grid .chg::after{content:"";position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--chg)}
   .legend{font-size:11px;color:var(--sub);margin:8px 4px 0}
   .legend i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--chg);margin-right:4px;vertical-align:middle}
+  .en{display:block;font-size:.72em;font-weight:500;color:var(--sub);letter-spacing:.01em;margin-top:1px;line-height:1.3}
+  .en.il{display:inline;margin:0 0 0 5px}
+  .seg button.on .en{color:rgba(255,255,255,.85)}
+  .metag .en,.tpill .en{display:inline}
+  .brand{display:flex;align-items:center;gap:12px;margin:8px 0 6px}
+  .logo{width:48px;height:48px;flex:none;filter:drop-shadow(0 3px 8px rgba(225,29,72,.3))}
+  .brand h1{margin:0;font-size:24px;font-weight:800;line-height:1.15}
+  .brand h1 .bus-en{font-weight:800;letter-spacing:.02em}
+  .subbar{display:flex;justify-content:space-between;align-items:flex-end;margin:0 0 14px;gap:10px}
+  .subbar .route{font-size:13px}
   footer{margin-top:24px;font-size:11px;color:var(--sub);line-height:1.6;text-align:center}
   .loc{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 2px 12px;font-size:13px;color:var(--sub)}
   .loc b{color:var(--text)}
@@ -98,13 +111,14 @@
   .stop{width:12px;height:12px;border-radius:50%;background:var(--card);border:3px solid;position:relative;z-index:1}
   .lane.L .stop{border-color:var(--out)} .lane.R .stop{border-color:var(--ret)}
   .names{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:6px;padding:4px 0;font-size:12.5px;line-height:1.25}
-  .names .nm{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all}
+  .names .nm{word-break:keep-all;min-width:0}
+  .names .ko{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .names .l{text-align:left} .names .r{text-align:right}
   .names .c{grid-column:1/3;text-align:center;font-weight:600}
   .names .air{font-weight:800}
   .row.me .names .r,.row.me .names .c{color:var(--ret);font-weight:800}
   .row.me .lane.R .stop{width:16px;height:16px;border-width:4px;box-shadow:0 0 0 4px color-mix(in srgb,var(--ret) 25%,transparent)}
-  .metag{display:inline-block;font-size:10px;font-weight:800;color:#fff;background:var(--ret);border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+  .metag{display:inline-block;white-space:nowrap;font-size:10px;font-weight:800;color:#fff;background:var(--ret);border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:1px}
   .row:nth-child(even){background:color-mix(in srgb,var(--bg) 55%,transparent)}
 
   /* 회차 지점 (U턴) */
@@ -136,19 +150,25 @@
 <body>
 <div class="wrap">
   <header>
-    <div>
-      <div class="route">대화동 ↔ 인천공항</div>
-      <h1><span class="no">3300</span>번 다음 버스</h1>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f43f5e"/><stop offset="1" stop-color="#be123c"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#lg)"/><g transform="translate(48 15) rotate(45)"><path fill="#fff" d="M0-8C.9-8 1.4-7 1.4-5.6V-2L8 2v2L1.4 2v4.2L3.6 8v1.6L0 8.6-3.6 9.6V8l2.2-1.8V2L-8 4V2l6.6-4v-3.6C-1.4-7-.9-8 0-8z"/></g><rect x="12" y="22" width="32" height="30" rx="6" fill="#fff"/><rect x="16" y="26" width="24" height="11" rx="2.5" fill="#be123c"/><rect x="16" y="40" width="24" height="2.5" rx="1.2" fill="#fecdd3"/><circle cx="19.5" cy="46.5" r="2.2" fill="#be123c"/><circle cx="36.5" cy="46.5" r="2.2" fill="#be123c"/><rect x="15" y="51" width="6" height="5" rx="1.5" fill="#fff"/><rect x="35" y="51" width="6" height="5" rx="1.5" fill="#fff"/></svg>
+      <div>
+        <h1>공항리무진 <span class="no">3300</span>번 <span class="bus-en">BUS</span></h1>
+        <span class="en" style="font-size:12px">Airport Limousine Bus No. 3300</span>
+      </div>
     </div>
-    <div class="clock"><div class="t" id="clock">--:--:--</div><div class="z">한국시간 (KST)</div></div>
+    <div class="subbar">
+      <div class="route">대화동 ↔ 인천공항<span class="en">Daehwa-dong ↔ Incheon Airport</span></div>
+      <div class="clock"><div class="t" id="clock">--:--:--</div><div class="z">한국시간 · Korea Time</div></div>
+    </div>
   </header>
 
   <nav class="seg" id="seg">
-    <button data-k="dh">대화동<small>공항 방면</small></button>
-    <button data-k="t2">T2<small>대화동 방면</small></button>
-    <button data-k="t1">T1<small>대화동 방면</small></button>
+    <button data-k="dh">대화동<small>공항 방면</small><small class="en">Daehwa → Airport</small></button>
+    <button data-k="t2">T2<small>대화동 방면</small><small class="en">T2 → Daehwa</small></button>
+    <button data-k="t1">T1<small>대화동 방면</small><small class="en">T1 → Daehwa</small></button>
   </nav>
-  <div class="loc"><span id="locMsg">📍 위치 확인 중…</span><button id="locBtn">현재 위치로</button></div>
+  <div class="loc"><span id="locMsg">📍 위치 확인 중…</span><button id="locBtn">현재 위치로 <span class="en il">Locate</span></button></div>
 
   <section class="hero">
     <div class="lbl" id="heroLbl">다음 출발</div>
@@ -159,9 +179,14 @@
     <div class="note" id="heroNote"></div>
   </section>
 
-  <section class="live" id="live" hidden>
+
+  <div class="listhead"><h2 id="listTitle">전체 시간표</h2><span id="count"></span></div>
+  <div class="grid" id="grid"></div>
+  <div class="legend"><i></i>2026.1.15 변경된 시간 <span class="en il">Changed Jan 15, 2026</span></div>
+
+  <section class="live" style="margin-top:20px" id="live" hidden>
     <div class="live-h">
-      <h2><span class="dot-live" id="liveDot"></span>실시간 버스 위치 <span id="liveCnt" style="color:var(--sub);font-weight:600"></span></h2>
+      <h2><span class="dot-live" id="liveDot"></span><span>실시간 버스 위치 <span id="liveCnt" style="color:var(--sub);font-weight:600"></span><span class="en">Live bus location</span></span></h2>
       <button id="liveBtn">↻ <span id="liveAt">--:--:--</span></button>
     </div>
     <div class="near" id="near" hidden></div>
@@ -169,28 +194,25 @@
     <div class="live-msg" id="liveMsg"></div>
   </section>
 
-  <div class="listhead"><h2 id="listTitle">전체 시간표</h2><span id="count"></span></div>
-  <div class="grid" id="grid"></div>
-  <div class="legend"><i></i>2026.1.15 변경된 시간</div>
-
   <footer>
     2026년 1월 15일 개정 시간표 기준 · 주식회사 명성 (031-915-0388)<br>
     도로 및 교통 상황에 따라 운행시간은 변경될 수 있습니다.
+    <span class="en">Timetable effective Jan 15, 2026 · Myeongseong Co. · Times may vary with traffic.</span>
   </footer>
 </div>
 
 <script>
 // ===== 시간표 데이터 (2026.1.15 개정) =====
 const STOPS = {
-  dh: { name: "대화동 출발", to: "인천공항 방면",
+  dh: { name: "대화동 출발", to: "인천공항 방면", en: "From Daehwa-dong to Incheon Airport", short: "Daehwa-dong",
     times: ["4:15","4:30","4:45","5:00","5:15","5:35","5:55","6:15","6:35","6:55","7:15","7:35","7:55","8:15","8:35","8:55","9:15","9:35","9:55","10:15","10:35","10:55","11:10","11:30","11:50","12:10","12:30","12:50","13:10","13:30",
             "13:50","14:10","14:30","14:50","15:10","15:30","15:50","16:10","16:25","16:45","17:05","17:30","17:50","18:10","18:30","18:50","19:10","19:30","19:50","20:10","20:30","20:50","21:10","21:30","21:45"],
     changed: ["16:25","16:45","17:05"] },
-  t2: { name: "인천공항 T2 출발", to: "대화동 방면",
+  t2: { name: "인천공항 T2 출발", to: "대화동 방면", en: "From Incheon Airport T2 to Daehwa-dong", short: "Terminal 2",
     times: ["5:45","6:00","6:15","6:30","6:45","7:05","7:25","7:45","8:05","8:25","8:45","9:05","9:25","9:45","10:05","10:25","10:45","11:05","11:25","11:45","12:05","12:25","12:40","13:00","13:20","13:40","14:00","14:20","14:40","15:00",
             "15:20","15:40","16:00","16:20","16:40","17:00","17:20","17:40","17:55","18:15","18:35","19:00","19:20","19:40","20:00","20:20","20:40","21:00","21:20","21:40","22:00","22:20","22:40","23:00","23:15"],
     changed: ["17:55","18:15","18:35"] },
-  t1: { name: "인천공항 T1 출발", to: "대화동 방면",
+  t1: { name: "인천공항 T1 출발", to: "대화동 방면", en: "From Incheon Airport T1 to Daehwa-dong", short: "Terminal 1",
     times: ["6:05","6:20","6:35","6:50","7:05","7:25","7:45","8:05","8:25","8:45","9:05","9:25","9:45","10:05","10:25","10:45","11:05","11:25","11:45","12:05","12:25","12:45","13:00","13:20","13:40","14:00","14:20","14:40","15:00","15:20",
             "15:40","16:00","16:20","16:40","17:00","17:20","17:40","18:00","18:15","18:30","18:50","19:20","19:40","20:00","20:20","20:40","21:00","21:20","21:40","22:00","22:20","22:40","23:00","23:20","23:35"],
     changed: ["18:15","18:30","18:50"] }
@@ -217,6 +239,14 @@ function humanLeft(sec){
   const h = Math.floor(min/60), r = min%60;
   return h + "시간" + (r ? " " + r + "분" : "") + " 후";
 }
+function humanLeftEn(sec){
+  if (sec < 60) return "departing soon";
+  const min = Math.floor(sec/60);
+  if (min < 60) return "in " + min + " min";
+  const h = Math.floor(min/60), r = min%60;
+  return "in " + h + " h" + (r ? " " + r + " min" : "");
+}
+const en = (t, inline) => `<span class="en${inline ? " il" : ""}">${t}</span>`;
 function countdown(sec){
   const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
   return (h ? h + ":" + pad(m) : m) + ":" + pad(s);
@@ -249,10 +279,11 @@ function render(scroll){
   const depSec = mins[idx]*60 + (tomorrow ? 86400 : 0);
   const left = depSec - now.sec;
 
-  document.getElementById("heroLbl").textContent = st.name + " · " + st.to + (tomorrow ? " · 내일 첫차" : "");
+  document.getElementById("heroLbl").innerHTML = st.name + " · " + st.to + (tomorrow ? " · 내일 첫차" : "")
+    + en(st.en + (tomorrow ? " · First bus tomorrow" : ""));
   document.getElementById("heroDep").textContent = fmt(st.times[idx]);
-  document.getElementById("heroLeft").textContent = humanLeft(left);
-  document.getElementById("heroCd").textContent = "남은 시간 " + countdown(left);
+  document.getElementById("heroLeft").innerHTML = humanLeft(left) + en(humanLeftEn(left), true);
+  document.getElementById("heroCd").textContent = "남은 시간 Time left " + countdown(left);
 
   // 그 다음 버스 2대
   const after = [];
@@ -260,21 +291,23 @@ function render(scroll){
     const j = idx + i;
     if (j >= st.times.length) break;
     const sec = mins[j]*60 + (tomorrow ? 86400 : 0) - now.sec;
-    after.push(`<div><span>${i===1?"그 다음":"다다음"}</span><b>${fmt(st.times[j])}</b><span>${humanLeft(sec)}</span></div>`);
+    after.push(`<div><span>${i===1?"그 다음 · Next":"다다음 · After next"}</span><b>${fmt(st.times[j])}</b><span>${humanLeft(sec)}</span>${en(humanLeftEn(sec))}</div>`);
   }
   document.getElementById("after").innerHTML = after.join("") ||
-    `<div><span>안내</span><b style="font-size:16px">막차입니다</b></div>`;
+    `<div><span>안내 · Info</span><b style="font-size:16px">막차입니다</b>${en("Last bus of the day")}</div>`;
 
-  document.getElementById("heroNote").textContent = tomorrow
-    ? "오늘 운행이 종료되었습니다. 막차 " + fmt(st.times[st.times.length-1])
-    : (idx === st.times.length-1 ? "⚠ 오늘 막차입니다" : "");
+  const lastT = fmt(st.times[st.times.length-1]);
+  document.getElementById("heroNote").innerHTML = tomorrow
+    ? "오늘 운행이 종료되었습니다. 막차 " + lastT + en("Service has ended for today. Last bus " + lastT)
+    : (idx === st.times.length-1 ? "⚠ 오늘 막차입니다" + en("This is the last bus today") : "");
 
   // 전체 시간표 (분이 바뀔 때만 다시 그림)
   if (lastNextIdx !== idx + (tomorrow ? 1000 : 0)){
     lastNextIdx = idx + (tomorrow ? 1000 : 0);
-    document.getElementById("listTitle").textContent = st.name + " 전체 시간표";
+    document.getElementById("listTitle").innerHTML = st.name + " 전체 시간표" + en("Full timetable · " + st.short);
     const remain = tomorrow ? 0 : st.times.length - idx;
-    document.getElementById("count").textContent = "오늘 남은 " + remain + "회 / 총 " + st.times.length + "회";
+    document.getElementById("count").innerHTML = "오늘 남은 " + remain + "회 / 총 " + st.times.length + "회"
+      + en(remain + " left today / " + st.times.length + " total");
     document.getElementById("grid").innerHTML = st.times.map((t,i) => {
       const c = [];
       if (!tomorrow && i < idx) c.push("past");
@@ -292,8 +325,8 @@ function render(scroll){
 // ===== 위치 기반 자동 선택 =====
 // 터미널 반경(RADIUS_KM) 안이면 해당 터미널, 그 외에는 대화동
 const TERMINALS = {
-  t1: { name: "인천공항 제1터미널", lat: 37.4492, lng: 126.4510 },
-  t2: { name: "인천공항 제2터미널", lat: 37.4687, lng: 126.4335 }
+  t1: { name: "인천공항 제1터미널", en: "Incheon Airport T1", lat: 37.4492, lng: 126.4510 },
+  t2: { name: "인천공항 제2터미널", en: "Incheon Airport T2", lat: 37.4687, lng: 126.4335 }
 };
 const RADIUS_KM = 1.2;
 
@@ -307,10 +340,10 @@ function distKm(a, b, c, d){
 const locMsg = document.getElementById("locMsg");
 function locate(){
   if (!("geolocation" in navigator)){
-    locMsg.textContent = "📍 위치 기능을 지원하지 않는 브라우저입니다";
+    locMsg.innerHTML = "📍 위치 기능을 지원하지 않는 브라우저입니다" + en("Location not supported");
     return;
   }
-  locMsg.textContent = "📍 위치 확인 중…";
+  locMsg.innerHTML = "📍 위치 확인 중…" + en("Finding your location…");
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude: la, longitude: lo } = pos.coords;
     let best = null, bestD = Infinity;
@@ -320,21 +353,21 @@ function locate(){
     }
     if (bestD <= RADIUS_KM){
       select(best);
-      locMsg.innerHTML = `📍 현재 위치: <b>${TERMINALS[best].name}</b>`;
+      locMsg.innerHTML = `📍 현재 위치: <b>${TERMINALS[best].name}</b>` + en("You are at " + TERMINALS[best].en);
     } else {
       select("dh");
-      locMsg.innerHTML = `📍 공항 밖 → <b>대화동 출발</b> 표시`;
+      locMsg.innerHTML = `📍 공항 밖 → <b>대화동 출발</b> 표시` + en("Outside the airport → showing Daehwa-dong");
     }
   }, err => {
-    locMsg.textContent = err.code === 1
-      ? "📍 위치 권한이 꺼져 있어 마지막 선택을 표시합니다"
-      : "📍 위치를 찾지 못해 마지막 선택을 표시합니다";
+    locMsg.innerHTML = err.code === 1
+      ? "📍 위치 권한이 꺼져 있어 마지막 선택을 표시합니다" + en("Location permission off · showing last choice")
+      : "📍 위치를 찾지 못해 마지막 선택을 표시합니다" + en("Location unavailable · showing last choice");
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
 }
 document.getElementById("locBtn").onclick = locate;
 // 탭을 직접 누르면 위치 안내 문구를 수동 선택으로 바꿈
 document.querySelectorAll("#seg button").forEach(b =>
-  b.addEventListener("click", () => { locMsg.textContent = "✋ 직접 선택함"; }));
+  b.addEventListener("click", () => { locMsg.innerHTML = "✋ 직접 선택함" + en("Selected manually"); }));
 
 // ===== 실시간 버스 위치 =====
 // Cloudflare Worker 주소를 넣으세요 (예: "https://bus3300.아이디.workers.dev"). 비우면 실시간 카드 숨김
@@ -405,7 +438,7 @@ function renderLive(){
   const pos = seq => ((seq - first) / Math.max(1, last - first)) * 100;
   const buses = (live.buses || []).slice().sort((a, b) => a.seq - b.seq);
   const dir = b => b.seq < turn ? "o" : "r";
-  $("liveCnt").textContent = "· 운행 " + buses.length + "대";
+  $("liveCnt").textContent = "· 운행 " + buses.length + "대 (" + buses.length + " running)";
 
   // 내 정류장 기준 가장 가까운 버스
   const tg = target[key];
@@ -417,11 +450,13 @@ function renderLive(){
     const stopsLeft = b => st.filter(s => s.seq > b.seq && s.seq <= tg.seq && !isWaypoint(s.name)).length;
     if (coming.length){
       const b = coming[0], n = stopsLeft(b);
-      near.innerHTML = `<div class="k">${cleanName(tg.name)} 기준 가장 가까운 버스</div>
-        <div class="v">${b.seq === tg.seq ? "정류장 도착 / 정차 중" : n <= 1 ? "곧 도착 (다음 정류장)" : n + "정거장 전"}</div>
+      const [ko, eng] = b.seq === tg.seq ? ["정류장 도착 / 정차 중", "At the stop now"]
+        : n <= 1 ? ["곧 도착 (다음 정류장)", "Arriving at the next stop"] : [n + "정거장 전", n + " stops away"];
+      near.innerHTML = `<div class="k">${plainNice(tg)} 기준 가장 가까운 버스${en("Nearest bus to " + (NICE_EN[tg.name] || "your stop"))}</div>
+        <div class="v">${ko}${en(eng, true)}</div>
         <div class="s">현재 ${cleanName(b.stationName) || b.seq + "번째 정류장"}${b.seats >= 0 ? " · 잔여 " + b.seats + "석" : ""}</div>`;
     } else {
-      near.innerHTML = `<div class="k">${cleanName(tg.name)} 기준</div><div class="v">접근 중인 버스 없음</div>`;
+      near.innerHTML = `<div class="k">${plainNice(tg)} 기준${en("To " + (NICE_EN[tg.name] || "your stop"))}</div><div class="v">접근 중인 버스 없음${en("No bus approaching", true)}</div>`;
     }
   } else {
     near.hidden = true;
@@ -442,10 +477,25 @@ const NICE = {
   "인천공항B1층입국장(T2)": "✈ 인천공항 T2 (B1)",
   "인천공항3층출국장(T2)": "✈ 인천공항 T2",
 };
+const NICE_EN = {
+  "인천국제공항(3층)": "Incheon Airport T1",
+  "인천공항9B": "Incheon Airport T1 · Bay 9B",
+  "인천공항B1층입국장(T2)": "Incheon Airport T2 · B1",
+  "인천공항3층출국장(T2)": "Incheon Airport T2",
+};
+// 주요 정류장 영문 표기
+const STN_EN = {
+  "대화동": "Daehwa-dong", "대화역": "Daehwa Stn.", "주엽역": "Juyeop Stn.", "마두역": "Madu Stn.",
+  "백석역": "Baekseok Stn.", "백병원": "Ilsan Paik Hospital", "일산동구청": "Ilsandong-gu Office",
+  "김포영업소": "Gimpo Tollgate", "킨텍스휴먼빌아파트.송포농협": "KINTEX",
+};
 const keyName = s => cleanName(s.name).trim();
+const plainNice = s => (NICE[s.name] || cleanName(s.name)).replace(/^✈ /, "");
 const niceName = s => {
   const n = NICE[s.name];
-  return n ? `<span class="air">${n}</span>` : cleanName(s.name).replace(/\./g, "·");
+  if (n) return `<span class="ko air">${n}</span>${en(NICE_EN[s.name])}`;
+  const k = keyName(s), e = STN_EN[k];
+  return `<span class="ko">${k.replace(/\./g, "·")}</span>` + (e ? en(e) : "");
 };
 
 function buildDiagram(st, turn, buses, tg, nearBus){
@@ -498,13 +548,15 @@ function buildDiagram(st, turn, buses, tg, nearBus){
   }).join("");
 
   const isMe = s => tg && s && s.seq === tg.seq;
-  let html = `<div class="rhead"><span class="o">공항행 ↓</span><span class="r">↑ 대화동행</span></div><div class="route">`;
+  let html = `<div class="rhead"><span class="o">공항행 ↓${en("To Airport")}</span><span class="r" style="text-align:right">↑ 대화동행${en("To Daehwa-dong")}</span></div><div class="route">`;
   rows.forEach((row, r) => {
     const same = row.L && row.R && keyName(row.L) === keyName(row.R);
-    const me = isMe(row.R) ? `<span class="metag">내 정류장</span>` : "";
+    const me = isMe(row.R) ? `<span class="metag">내 정류장 · My stop</span>` : "";
     const names = same
       ? `<div class="nm c">${niceName(row.L)}${me}</div>`
-      : `<div class="nm l">${row.L ? niceName(row.L) : ""}</div><div class="nm r">${row.R ? niceName(row.R) + me : ""}</div>`;
+      : !row.L ? `<div class="nm r" style="grid-column:1/3">${niceName(row.R) + me}</div>`
+      : !row.R ? `<div class="nm l" style="grid-column:1/3">${niceName(row.L)}</div>`
+      : `<div class="nm l">${niceName(row.L)}</div><div class="nm r">${niceName(row.R) + me}</div>`;
     html += `<div class="row${isMe(row.R) ? " me" : ""}">
       <div class="lane L">${row.L ? `<span class="stop"></span>` : ""}${icons("L" + r, "o")}</div>
       <div class="names">${names}</div>
@@ -513,10 +565,10 @@ function buildDiagram(st, turn, buses, tg, nearBus){
   });
   html += `<div class="row turn${isMe(turnSt) ? " me" : ""}">
       <div class="lane L"></div>
-      <div class="tpill">${(slots.turn || []).map(({ b }) => `<span class="bus o inl${b === nearBus ? " hl" : ""}" title="${(b.plate || "").slice(-4)}">${BUS_SVG}</span>`).join("")}${NICE[turnSt.name] || "✈ " + cleanName(turnSt.name)} · 회차${isMe(turnSt) ? `<span class="metag">내 정류장</span>` : ""}</div>
+      <div class="tpill">${(slots.turn || []).map(({ b }) => `<span class="bus o inl${b === nearBus ? " hl" : ""}" title="${(b.plate || "").slice(-4)}">${BUS_SVG}</span>`).join("")}${NICE[turnSt.name] || "✈ " + cleanName(turnSt.name)} · 회차 <span class="en il">Turnaround</span>${isMe(turnSt) ? `<span class="metag">내 정류장 · My stop</span>` : ""}</div>
       <div class="lane R">${icons("turnR", "r")}</div>
     </div></div>`;
-  html += `<div class="legend2"><span><i style="background:var(--out)"></i>공항행 버스</span><span><i style="background:var(--ret)"></i>대화동행 버스</span><span><i style="background:var(--sub);width:10px;height:10px"></i>작은 아이콘 = 정류장 사이 이동 중</span>${buses.length ? "" : "<span>운행 중인 버스 없음</span>"}</div>`;
+  html += `<div class="legend2"><span><i style="background:var(--out)"></i>공항행 To Airport</span><span><i style="background:var(--ret)"></i>대화동행 To Daehwa</span><span><i style="background:var(--sub);width:10px;height:10px"></i>작은 아이콘 = 이동 중 (between stops)</span>${buses.length ? "" : "<span>운행 중인 버스 없음</span>"}</div>`;
   return html;
 }
 

@@ -1,0 +1,12 @@
+{
+  "name": "공항리무진 3300번 BUS",
+  "short_name": "리무진 3300",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f9",
+  "theme_color": "#e11d48",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
