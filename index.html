@@ -35,7 +35,7 @@
   .clock .t{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
   .clock .z{font-size:11px;color:var(--sub)}
 
-  .seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--line);
+  .seg{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);
     border-radius:14px;padding:4px;gap:4px;margin-bottom:14px}
   .seg button{border:0;background:transparent;color:var(--sub);font:inherit;font-weight:700;font-size:14px;
     padding:10px 4px;border-radius:10px;cursor:pointer}
@@ -74,6 +74,18 @@
   .brand h1 .bus-en{font-weight:800;letter-spacing:.02em}
   .subbar{display:flex;justify-content:space-between;align-items:flex-end;margin:0 0 14px;gap:10px}
   .subbar .route{font-size:13px}
+  .stoppick{display:flex;align-items:center;gap:8px;margin:-4px 0 12px}
+  .stoppick[hidden]{display:none}
+  .stoppick select{flex:1;min-width:0;font:inherit;font-size:15px;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--line);border-radius:12px;padding:10px 12px;appearance:auto}
+  .estnote{margin-top:10px;font-size:12px;color:var(--sub);background:var(--bg);border-radius:10px;padding:8px 10px;line-height:1.45}
+  .src{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:3px}
+  .src.lv{background:#dcfce7;color:#166534} .src.sc{background:var(--bg);color:var(--sub)}
+  @media (prefers-color-scheme: dark){ .src.lv{background:#14532d;color:#bbf7d0} }
+  .grid .est{font-weight:600}
+  .after .src{margin:4px 0 2px}
+  #count{white-space:nowrap;text-align:right}
+  .listhead{gap:10px}
   footer{margin-top:24px;font-size:11px;color:var(--sub);line-height:1.6;text-align:center}
   .loc{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 2px 12px;font-size:13px;color:var(--sub)}
   .loc b{color:var(--text)}
@@ -164,10 +176,12 @@
   </header>
 
   <nav class="seg" id="seg">
-    <button data-k="dh">대화동<small>공항 방면</small><small class="en">Daehwa → Airport</small></button>
-    <button data-k="t2">T2<small>대화동 방면</small><small class="en">T2 → Daehwa</small></button>
-    <button data-k="t1">T1<small>대화동 방면</small><small class="en">T1 → Daehwa</small></button>
+    <button data-k="dh">대화동<small>공항 방면</small><small class="en">To Airport</small></button>
+    <button data-k="t2">T2<small>대화동 방면</small><small class="en">To Daehwa</small></button>
+    <button data-k="t1">T1<small>대화동 방면</small><small class="en">To Daehwa</small></button>
+    <button data-k="s">정류장<small>다른 정류장</small><small class="en">Other stop</small></button>
   </nav>
+  <div class="stoppick" id="stopPick" hidden><select id="stopSel" aria-label="정류장 선택"></select></div>
   <div class="loc"><span id="locMsg">📍 위치 확인 중…</span><button id="locBtn">현재 위치로 <span class="en il">Locate</span></button></div>
 
   <section class="hero">
@@ -221,7 +235,7 @@ const STOPS = {
 // ===== 유틸 =====
 const toMin = s => { const [h,m] = s.split(":").map(Number); return h*60+m; };
 const pad = n => String(n).padStart(2,"0");
-const fmt = s => { const [h,m] = s.split(":"); return pad(h)+":"+m; };
+const fmt = s => { const [h,m] = s.split(":"); return pad(+h % 24)+":"+m; };
 
 // 기기 시간대와 관계없이 항상 한국시간(KST) 기준 — 해외 체류 중에도 정확
 function nowKST(){
@@ -252,15 +266,99 @@ function countdown(sec){
   return (h ? h + ":" + pad(m) : m) + ":" + pad(s);
 }
 
+// ===== 중간 정류장 (시간표 없음 → 추정) =====
+// 출발지에서 각 정류장까지 평균 소요시간(분). 2026.10.21 실측 버스 위치 + 거리 비례로 추정
+// O: 대화동 출발 기준(공항 방면), R: 인천공항 T2 출발 기준(대화동 방면, T1 9B = +20분)
+const PROFILE = {
+  O: {1:0,2:0,3:1,4:2,5:5,6:6,7:8,8:10,9:12,10:14,11:17,12:20,13:22,14:23,15:24,16:25,17:28,18:32,19:39,20:41,21:44,22:51,23:54,24:60,25:61,26:61,27:62,28:62,29:66,30:70},
+  R: {33:0,34:3,35:7,36:9,37:11,38:16,39:17,40:19,41:19,42:20,43:21,44:21,45:23,46:25,47:32,48:36,49:43,50:49,51:51,52:52,53:57,54:60,55:64,56:66,57:68,58:70,59:73,60:77,61:79,62:82,63:84,64:86,65:87,66:90,67:91,68:92},
+};
+// 선택 가능한 정류장 [순번, 이름, 영문, 위도, 경도]
+const MID_STOPS = {
+  O: [[3,"현대파크아파트·양우아파트","",37.67007,126.73433],[4,"킨텍스휴먼빌아파트·송포농협","KINTEX",37.67175,126.73737],
+      [5,"대화역","Daehwa Stn.",37.6761,126.74748],[6,"백병원","Ilsan Paik Hospital",37.67457,126.751],[7,"문촌마을","Munchon Village",37.6725,126.75577],
+      [8,"주엽역","Juyeop Stn.",37.67023,126.76095],[9,"강선마을","Gangseon Village",37.66792,126.76537],[10,"일산동부경찰서","Ilsan Dongbu Police Stn.",37.66407,126.76947],
+      [11,"일산동구청","Ilsandong-gu Office",37.65778,126.77425],[12,"마두역","Madu Stn.",37.65233,126.77747],[13,"호수마을","Hosu Village",37.64848,126.7807],
+      [14,"알미공원·일산동구보건소","",37.64575,126.78432],[15,"백석역","Baekseok Stn.",37.64448,126.78602],[16,"백석동·요진와이시티","",37.64103,126.79057],
+      [20,"김포영업소","Gimpo Tollgate",37.59275,126.7671]],
+  R: [[43,"합동청사역","",37.44042,126.45863],[44,"국제업무단지(공항청사)","",37.43927,126.46172],[51,"김포영업소","Gimpo Tollgate",37.59285,126.76812],
+      [55,"백석동·요진와이시티","",37.64082,126.79107],[56,"안산공원·일산동구보건소","",37.64547,126.78487],[57,"흰돌마을","Huindol Village",37.64815,126.78133],
+      [58,"마두역","Madu Stn.",37.65175,126.77795],[59,"일산동구청","Ilsandong-gu Office",37.6574,126.77467],[60,"일산동부경찰서","Ilsan Dongbu Police Stn.",37.66365,126.77002],
+      [61,"강선마을","Gangseon Village",37.6674,126.76622],[62,"주엽역","Juyeop Stn.",37.67003,126.76163],[63,"문촌마을","Munchon Village",37.6723,126.75647],
+      [64,"백병원","Ilsan Paik Hospital",37.67437,126.75173],[65,"대화역","Daehwa Stn.",37.67598,126.74793],[66,"킨텍스휴먼빌아파트·송포농협","KINTEX",37.672,126.73763],
+      [67,"양우아파트·송포청소년문화의집","",37.67053,126.7346]],
+};
+const midInfo = seq => {
+  for (const d of ["O","R"]){ const r = MID_STOPS[d].find(x => x[0] === seq); if (r) return { dir: d, seq, name: r[1], en: r[2], lat: r[3], lng: r[4] }; }
+  return null;
+};
+const fromMin = m => Math.floor(m/60) + ":" + pad(m%60);
+const stopCache = {};
+function getStop(k){
+  if (STOPS[k]) return STOPS[k];
+  if (stopCache[k]) return stopCache[k];
+  const info = k && k.startsWith("s:") ? midInfo(+k.slice(2)) : null;
+  if (!info) return STOPS.dh;
+  const out = info.dir === "O";
+  const base = out ? STOPS.dh : STOPS.t2;
+  const off = (out ? PROFILE.O : PROFILE.R)[info.seq];
+  const times = base.times.map(t => fromMin(toMin(t) + off));
+  const changed = base.changed.map(t => fromMin(toMin(t) + off));
+  return stopCache[k] = {
+    est: true, seq: info.seq, dir: info.dir, nm: info.name,
+    name: info.name, to: out ? "인천공항 방면" : "대화동 방면",
+    en: (info.en || info.name) + (out ? " → Incheon Airport" : " → Daehwa-dong") + " (estimated)",
+    short: (info.en || info.name) + " (est.)",
+    base: out ? "대화동 출발" : "인천공항 T2 출발", off, times, changed,
+  };
+}
+
+// 실시간 버스 위치로 이 정류장 도착 예상 시각(초, nowSec 기준) 계산
+function liveEtas(stp, nowSec){
+  if (!stp.est || !live || !live.buses || !live.stations || live.stations.length !== 68) return [];
+  const P = stp.dir === "O" ? PROFILE.O : PROFILE.R;
+  const res = [];
+  for (const b of live.buses){
+    const q = b.seq;
+    if (stp.dir === "O" ? (q < 2 || q > stp.seq) : (q <= 42 || q > stp.seq)) continue; // 출발 전·회차 대기·지나간 버스 제외
+    if (P[q] == null) continue;
+    res.push({ eta: nowSec + (P[stp.seq] - P[q]) * 60, bus: b });
+  }
+  return res.sort((a, b) => a.eta - b.eta);
+}
+let nowAdjSec = 0;
+
 // ===== 상태 =====
 let key = "dh";
-try { const k = localStorage.getItem("bus3300_stop"); if (STOPS[k]) key = k; } catch(e){}
+let autoMode = true;   // true면 위치에 따라 자동 선택
+try {
+  const k = localStorage.getItem("bus3300_stop");
+  if (STOPS[k] || (k && k.startsWith("s:") && midInfo(+k.slice(2)))) key = k;
+  autoMode = localStorage.getItem("bus3300_auto") !== "0";
+} catch(e){}
+let lastCustom = key.startsWith("s:") ? key : "s:8";
+try { const c = localStorage.getItem("bus3300_custom"); if (c && midInfo(+c.slice(2))) lastCustom = c; } catch(e){}
+
+// 정류장 선택 목록
+(function buildPicker(){
+  const grp = (d, label) => `<optgroup label="${label}">` + MID_STOPS[d].map(r =>
+    `<option value="s:${r[0]}">${r[1]}${r[2] ? " · " + r[2] : ""}</option>`).join("") + `</optgroup>`;
+  document.getElementById("stopSel").innerHTML =
+    grp("O", "공항 방면 승차 · To Airport") + grp("R", "대화동 방면 승차 · To Daehwa-dong");
+  document.getElementById("stopSel").onchange = e => { setAuto(false); select(e.target.value); };
+})();
+function setAuto(v){ autoMode = v; try { localStorage.setItem("bus3300_auto", v ? "1" : "0"); } catch(e){} }
 let lastNextIdx = null;
 
-function select(k){
+function select(k, quiet){
+  if (k === "s") k = lastCustom;
   key = k; lastNextIdx = null;
+  if (k.startsWith("s:")){ lastCustom = k; try { localStorage.setItem("bus3300_custom", k); } catch(e){} }
   try { localStorage.setItem("bus3300_stop", k); } catch(e){}
-  render(true);
+  const pick = document.getElementById("stopPick");
+  pick.hidden = !k.startsWith("s:");
+  if (!pick.hidden) document.getElementById("stopSel").value = k;
+  render(!quiet);
   renderLive();
 }
 document.querySelectorAll("#seg button").forEach(b => b.onclick = () => select(b.dataset.k));
@@ -268,43 +366,70 @@ document.querySelectorAll("#seg button").forEach(b => b.onclick = () => select(b
 function render(scroll){
   const now = nowKST();
   document.getElementById("clock").textContent = pad(now.h)+":"+pad(now.m)+":"+pad(now.s);
-  document.querySelectorAll("#seg button").forEach(b => b.classList.toggle("on", b.dataset.k === key));
+  document.querySelectorAll("#seg button").forEach(b =>
+    b.classList.toggle("on", b.dataset.k === key || (b.dataset.k === "s" && key.startsWith("s:"))));
 
-  const st = STOPS[key];
+  const st = getStop(key);
+  // 새벽(4시 전)에는 전날 밤 24시 넘은 도착 예정분도 보이도록 시간 축을 하루 뒤로
+  const nowSec = now.sec + (now.h < 4 ? 86400 : 0);
+  nowAdjSec = nowSec;
   const mins = st.times.map(toMin);
-  let idx = mins.findIndex(m => m*60 > now.sec);
-  const tomorrow = idx === -1;
-  if (tomorrow) idx = 0;
+  let gIdx = mins.findIndex(m => m*60 > nowSec);   // 시간표 기준 다음
+  const tomorrow = gIdx === -1;
+  if (tomorrow) gIdx = 0;
+  const shift = tomorrow ? 86400 : 0;
 
-  const depSec = mins[idx]*60 + (tomorrow ? 86400 : 0);
-  const left = depSec - now.sec;
+  // 예정 목록 (중간 정류장은 실시간 위치로 보정)
+  let ent = mins.map((m, i) => ({ sec: m*60 + shift, live: false, i }));
+  if (st.est && !tomorrow){
+    const used = new Set();
+    for (const L of liveEtas(st, nowSec)){
+      let best = -1, bd = 15*60 + 1;
+      ent.forEach((e, j) => { const d = Math.abs(e.sec - L.eta); if (!used.has(j) && d < bd){ bd = d; best = j; } });
+      if (best >= 0){ used.add(best); ent[best] = { sec: L.eta, live: true, i: ent[best].i }; }
+      else ent.push({ sec: L.eta, live: true, i: -1 });
+    }
+    // 실시간 데이터가 있는데 이미 출발했어야 할 버스가 안 보이면 → 이미 지나간 것으로 보고 제외
+    if (live && !liveErr && live.stations && live.stations.length === 68){
+      const hold = (st.dir === "R" ? 20 : 0) * 60;   // 대화동 방면은 T1(9B) 출발 이후부터 추적
+      ent = ent.filter(e => e.live || (e.sec - st.off*60 + hold) > nowSec - 60);
+    }
+    ent.sort((a, b) => a.sec - b.sec);
+  }
+  const up = ent.filter(e => e.sec > nowSec - 30);
+  const nx = up[0] || { sec: mins[0]*60 + 86400, live: false };
+  const left = Math.max(0, nx.sec - nowSec);
+  const hm = sec => { const m = Math.round(sec/60) % 1440; return pad(Math.floor(m/60)) + ":" + pad(m%60); };
+  const tag = e => !st.est ? "" : e.live
+    ? `<span class="src lv">실시간 · Live</span>` : `<span class="src sc">추정 · Est.</span>`;
 
-  document.getElementById("heroLbl").innerHTML = st.name + " · " + st.to + (tomorrow ? " · 내일 첫차" : "")
+  document.getElementById("heroLbl").innerHTML = st.name + " · " + st.to + (st.est ? " · 도착 예상" : "") + (tomorrow ? " · 내일 첫차" : "")
     + en(st.en + (tomorrow ? " · First bus tomorrow" : ""));
-  document.getElementById("heroDep").textContent = fmt(st.times[idx]);
+  document.getElementById("heroDep").innerHTML = (st.est ? `<small style="font-size:.4em;font-weight:700">약 </small>` : "") + hm(nx.sec) + tag(nx);
   document.getElementById("heroLeft").innerHTML = humanLeft(left) + en(humanLeftEn(left), true);
-  document.getElementById("heroCd").textContent = "남은 시간 Time left " + countdown(left);
+  document.getElementById("heroCd").textContent = "남은 시간 Time left " + countdown(Math.round(left));
 
   // 그 다음 버스 2대
-  const after = [];
-  for (let i = 1; i <= 2; i++){
-    const j = idx + i;
-    if (j >= st.times.length) break;
-    const sec = mins[j]*60 + (tomorrow ? 86400 : 0) - now.sec;
-    after.push(`<div><span>${i===1?"그 다음 · Next":"다다음 · After next"}</span><b>${fmt(st.times[j])}</b><span>${humanLeft(sec)}</span>${en(humanLeftEn(sec))}</div>`);
-  }
+  const after = up.slice(1, 3).map((e, i) => {
+    const sec = e.sec - nowSec;
+    return `<div><span>${i===0?"그 다음 · Next":"다다음 · After next"}</span><b>${(st.est ? "약 " : "") + hm(e.sec)}</b>${tag(e)}<br><span>${humanLeft(sec)}</span>${en(humanLeftEn(sec))}</div>`;
+  });
+  const idx = gIdx;
   document.getElementById("after").innerHTML = after.join("") ||
     `<div><span>안내 · Info</span><b style="font-size:16px">막차입니다</b>${en("Last bus of the day")}</div>`;
 
   const lastT = fmt(st.times[st.times.length-1]);
-  document.getElementById("heroNote").innerHTML = tomorrow
+  document.getElementById("heroNote").innerHTML = (tomorrow
     ? "오늘 운행이 종료되었습니다. 막차 " + lastT + en("Service has ended for today. Last bus " + lastT)
-    : (idx === st.times.length-1 ? "⚠ 오늘 막차입니다" + en("This is the last bus today") : "");
+    : (up.length === 1 ? "⚠ 오늘 막차입니다" + en("This is the last bus today") : ""))
+    + (st.est ? `<div class="estnote">이 정류장은 공식 시간표가 없어 <b>${st.base} 시각 + 평균 소요 ${st.off}분</b>으로 추정합니다.
+        운행 중인 버스가 있으면 <b>실시간 위치</b>로 다시 계산합니다. 교통상황에 따라 ±5~10분 차이가 날 수 있어요.
+        ${en("No official timetable for this stop: times are estimated from the " + (st.dir === "O" ? "Daehwa-dong" : "Airport T2") + " departure + " + st.off + " min average travel time, and corrected with live bus positions. Allow ±5–10 min.")}</div>` : "");
 
   // 전체 시간표 (분이 바뀔 때만 다시 그림)
   if (lastNextIdx !== idx + (tomorrow ? 1000 : 0)){
     lastNextIdx = idx + (tomorrow ? 1000 : 0);
-    document.getElementById("listTitle").innerHTML = st.name + " 전체 시간표" + en("Full timetable · " + st.short);
+    document.getElementById("listTitle").innerHTML = st.name + (st.est ? " 예상 도착 시간표" : " 전체 시간표") + en((st.est ? "Estimated arrivals · " : "Full timetable · ") + st.short);
     const remain = tomorrow ? 0 : st.times.length - idx;
     document.getElementById("count").innerHTML = "오늘 남은 " + remain + "회 / 총 " + st.times.length + "회"
       + en(remain + " left today / " + st.times.length + " total");
@@ -313,6 +438,7 @@ function render(scroll){
       if (!tomorrow && i < idx) c.push("past");
       if (i === idx) c.push("next");
       if (st.changed.includes(t)) c.push("chg");
+      if (st.est) c.push("est");
       return `<div class="${c.join(" ")}">${fmt(t)}</div>`;
     }).join("");
   }
@@ -338,7 +464,12 @@ function distKm(a, b, c, d){
 }
 
 const locMsg = document.getElementById("locMsg");
-function locate(){
+const STOP_RADIUS_KM = 0.35;   // 일산 중간 정류장 인식 반경
+function locate(force){
+  if (!force && !autoMode){
+    locMsg.innerHTML = "✋ 직접 선택한 정류장 표시 중" + en("Showing your chosen stop · tap Locate for auto");
+    return;
+  }
   if (!("geolocation" in navigator)){
     locMsg.innerHTML = "📍 위치 기능을 지원하지 않는 브라우저입니다" + en("Location not supported");
     return;
@@ -351,11 +482,20 @@ function locate(){
       const d = distKm(la, lo, TERMINALS[k].lat, TERMINALS[k].lng);
       if (d < bestD){ bestD = d; best = k; }
     }
+    // 가장 가까운 공항 방면 중간 정류장
+    let ms = null, msD = Infinity;
+    for (const r of MID_STOPS.O){
+      const d = distKm(la, lo, r[3], r[4]);
+      if (d < msD){ msD = d; ms = r; }
+    }
     if (bestD <= RADIUS_KM){
-      select(best);
+      select(best, true);
       locMsg.innerHTML = `📍 현재 위치: <b>${TERMINALS[best].name}</b>` + en("You are at " + TERMINALS[best].en);
+    } else if (ms && msD <= STOP_RADIUS_KM){
+      select("s:" + ms[0], true);
+      locMsg.innerHTML = `📍 현재 위치: <b>${ms[1]}</b> 근처 (공항 방면)` + en("Near " + (ms[2] || ms[1]) + " · to Airport");
     } else {
-      select("dh");
+      select("dh", true);
       locMsg.innerHTML = `📍 공항 밖 → <b>대화동 출발</b> 표시` + en("Outside the airport → showing Daehwa-dong");
     }
   }, err => {
@@ -364,10 +504,10 @@ function locate(){
       : "📍 위치를 찾지 못해 마지막 선택을 표시합니다" + en("Location unavailable · showing last choice");
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
 }
-document.getElementById("locBtn").onclick = locate;
-// 탭을 직접 누르면 위치 안내 문구를 수동 선택으로 바꿈
+document.getElementById("locBtn").onclick = () => { setAuto(true); locate(true); };
+// 탭을 직접 누르면 자동 선택을 멈춤 (현재 위치로 버튼을 누르면 다시 자동)
 document.querySelectorAll("#seg button").forEach(b =>
-  b.addEventListener("click", () => { locMsg.innerHTML = "✋ 직접 선택함" + en("Selected manually"); }));
+  b.addEventListener("click", () => { setAuto(false); locMsg.innerHTML = "✋ 직접 선택함" + en("Selected manually · tap Locate for auto"); }));
 
 // ===== 실시간 버스 위치 =====
 // Cloudflare Worker 주소를 넣으세요 (예: "https://bus3300.아이디.workers.dev"). 비우면 실시간 카드 숨김
@@ -411,6 +551,7 @@ function stopsInfo(st){
   const after = s => s.seq >= turn && !isWaypoint(s.name);
   const target = {
     dh: null,
+    ...(key.startsWith("s:") ? { [key]: st.find(s => s.seq === +key.slice(2)) || null } : {}),
     t2: st.find(s => after(s) && /입국장/.test(s.name) && RX.t2.test(s.name))
         || st.find(s => s.seq === turn) || t2 || null,
     t1: st.find(s => after(s) && /^인천공항9B/.test(s.name))
@@ -445,15 +586,27 @@ function renderLive(){
   const near = $("near");
   if (tg){
     near.hidden = false;
-    const coming = buses.filter(b => b.seq <= tg.seq).sort((a, b) => b.seq - a.seq);
+    // 같은 방향으로 이 정류장을 향해 오는 버스만
+    const leg = b => tg.seq < turn ? b.seq >= 1 : b.seq >= turn;
+    const coming = buses.filter(b => b.seq <= tg.seq && leg(b)).sort((a, b) => b.seq - a.seq);
     // 남은 정거장 = 버스 위치 이후 ~ 내 정류장까지의 실제 정류장 수 (경유 지점 제외)
     const stopsLeft = b => st.filter(s => s.seq > b.seq && s.seq <= tg.seq && !isWaypoint(s.name)).length;
     if (coming.length){
       const b = coming[0], n = stopsLeft(b);
       const [ko, eng] = b.seq === tg.seq ? ["정류장 도착 / 정차 중", "At the stop now"]
         : n <= 1 ? ["곧 도착 (다음 정류장)", "Arriving at the next stop"] : [n + "정거장 전", n + " stops away"];
-      near.innerHTML = `<div class="k">${plainNice(tg)} 기준 가장 가까운 버스${en("Nearest bus to " + (NICE_EN[tg.name] || "your stop"))}</div>
-        <div class="v">${ko}${en(eng, true)}</div>
+      // 중간 정류장: 평균 소요시간으로 도착까지 걸리는 시간
+      const stp = getStop(key);
+      let etaTxt = "";
+      if (stp.est && b.seq !== tg.seq){
+        const P = stp.dir === "O" ? PROFILE.O : PROFILE.R;
+        if (P[b.seq] != null && P[tg.seq] != null && !(stp.dir === "O" && b.seq < 2) && !(stp.dir === "R" && b.seq <= 42)){
+          const m = P[tg.seq] - P[b.seq];
+          etaTxt = `<div class="s" style="color:var(--accent);font-weight:700">약 ${Math.max(1, m)}분 후 도착 예상 ${en("about " + Math.max(1, m) + " min", true)}</div>`;
+        }
+      }
+      near.innerHTML = `<div class="k">${plainNice(tg)} 기준 가장 가까운 버스${en("Nearest bus to " + (NICE_EN[tg.name] || STN_EN[keyName(tg)] || "your stop"))}</div>
+        <div class="v">${ko}${en(eng, true)}</div>${etaTxt}
         <div class="s">현재 ${cleanName(b.stationName) || b.seq + "번째 정류장"}${b.seats >= 0 ? " · 잔여 " + b.seats + "석" : ""}</div>`;
     } else {
       near.innerHTML = `<div class="k">${plainNice(tg)} 기준${en("To " + (NICE_EN[tg.name] || "your stop"))}</div><div class="v">접근 중인 버스 없음${en("No bus approaching", true)}</div>`;
@@ -574,14 +727,14 @@ function buildDiagram(st, turn, buses, tg, nearBus){
 
 $("liveBtn").onclick = fetchLive;
 
-render(false);
-locate();
+select(key, true);
+locate(false);
 renderLive();
 fetchLive();
 setInterval(() => render(false), 1000);
 setInterval(() => { if (!document.hidden) fetchLive(); }, LIVE_SEC * 1000);
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden){ lastNextIdx = null; render(false); locate(); fetchLive(); }
+  if (!document.hidden){ lastNextIdx = null; render(false); locate(false); fetchLive(); }
 });
 </script>
 </body>
