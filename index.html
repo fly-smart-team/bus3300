@@ -82,23 +82,55 @@
   .near .k{font-size:12px;color:var(--sub);font-weight:600}
   .near .v{font-size:20px;font-weight:800;margin-top:2px}
   .near .s{font-size:13px;color:var(--sub);margin-top:2px}
-  .track{position:relative;height:46px;margin:14px 6px 4px}
-  .track .ln{position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;
-    background:linear-gradient(90deg,var(--out) 0 var(--tp,50%),var(--ret) var(--tp,50%) 100%);opacity:.25}
-  .track .bus{position:absolute;top:13px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:2px solid var(--card);
-    display:grid;place-items:center;font-size:10px;color:#fff;font-weight:800}
-  .track .bus.o{background:var(--out)} .track .bus.r{background:var(--ret)}
-  .track .mk{position:absolute;top:-2px;transform:translateX(-50%);font-size:11px;color:var(--sub);white-space:nowrap;font-weight:600}
-  .track .tg{position:absolute;top:32px;transform:translateX(-50%);font-size:11px;color:var(--text);font-weight:700;white-space:nowrap}
-  .track .ends{position:absolute;top:32px;font-size:11px;color:var(--sub)}
-  .buslist{margin-top:10px;border-top:1px solid var(--line)}
-  .buslist div{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
-  .buslist div:last-child{border-bottom:0}
-  .badge{font-size:11px;font-weight:700;color:#fff;padding:2px 7px;border-radius:999px;flex:none}
-  .badge.o{background:var(--out)} .badge.r{background:var(--ret)}
-  .buslist .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-  .buslist .mt{font-size:12px;color:var(--sub);flex:none;text-align:right}
   .live-msg{font-size:13px;color:var(--sub);margin-top:10px}
+
+  /* 2열 노선도: 왼쪽 공항행 ↓, 오른쪽 대화동행 ↑ */
+  .rhead{display:flex;justify-content:space-between;margin:16px 0 6px;font-size:12px;font-weight:800;white-space:nowrap}
+  .rhead .o{color:var(--out)} .rhead .r{color:var(--ret)}
+  .rhead .m{color:var(--sub);font-weight:600}
+  .route{position:relative}
+  .row{display:grid;grid-template-columns:56px 1fr 56px;min-height:46px;position:relative}
+  .lane{position:relative;display:flex;align-items:center;justify-content:center}
+  .lane::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px}
+  .lane.L::before{background:var(--out);opacity:.35}
+  .lane.R::before{background:var(--ret);opacity:.35}
+  .row:first-child .lane::before{top:50%}
+  .stop{width:12px;height:12px;border-radius:50%;background:var(--card);border:3px solid;position:relative;z-index:1}
+  .lane.L .stop{border-color:var(--out)} .lane.R .stop{border-color:var(--ret)}
+  .names{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:6px;padding:4px 0;font-size:12.5px;line-height:1.25}
+  .names .nm{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all}
+  .names .l{text-align:left} .names .r{text-align:right}
+  .names .c{grid-column:1/3;text-align:center;font-weight:600}
+  .names .air{font-weight:800}
+  .row.me .names .r,.row.me .names .c{color:var(--ret);font-weight:800}
+  .row.me .lane.R .stop{width:16px;height:16px;border-width:4px;box-shadow:0 0 0 4px color-mix(in srgb,var(--ret) 25%,transparent)}
+  .metag{display:inline-block;font-size:10px;font-weight:800;color:#fff;background:var(--ret);border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+  .row:nth-child(even){background:color-mix(in srgb,var(--bg) 55%,transparent)}
+
+  /* 회차 지점 (U턴) */
+  .row.turn{min-height:52px;background:none}
+  .row.turn .lane::before{top:0;bottom:50%}
+  .row.turn::after{content:"";position:absolute;left:28px;right:28px;top:50%;height:4px;margin-top:-2px;border-radius:2px;
+    background:linear-gradient(90deg,var(--out),var(--ret));opacity:.35}
+  .tpill{position:relative;z-index:1;align-self:center;justify-self:center;background:var(--card);border:1px solid var(--line);
+    border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;white-space:nowrap}
+
+  /* 버스 아이콘 */
+  .bus{position:absolute;left:50%;top:50%;width:30px;height:30px;transform:translate(-50%,-50%);border-radius:9px;z-index:2;
+    display:grid;place-items:center;color:#fff;border:2px solid var(--card);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .bus.down,.bus.up{width:22px;height:22px;border-radius:7px;z-index:3}
+  .bus.down svg,.bus.up svg{width:13px;height:13px}
+  .bus.inl{position:relative;left:auto;top:auto;transform:none;display:inline-grid;width:22px;height:22px;border-radius:7px;
+    vertical-align:middle;margin-right:4px;box-shadow:none}
+  .bus.inl svg{width:13px;height:13px}
+  .bus.o{background:var(--out)} .bus.r{background:var(--ret)}
+  .bus.down{top:100%} .bus.up{top:0}
+  .bus.hl::after{content:"";position:absolute;inset:-6px;border-radius:12px;border:2px solid var(--ret);
+    pointer-events:none;animation:ring 1.6s infinite}
+  @keyframes ring{0%{opacity:.9;transform:scale(.9)}100%{opacity:0;transform:scale(1.35)}}
+  .legend2{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:11px;color:var(--sub);margin-top:12px;white-space:nowrap}
+  .legend2 span{display:flex;align-items:center;gap:5px}
+  .legend2 i{width:14px;height:14px;border-radius:4px;display:inline-block}
 </style>
 </head>
 <body>
@@ -133,8 +165,7 @@
       <button id="liveBtn">↻ <span id="liveAt">--:--:--</span></button>
     </div>
     <div class="near" id="near" hidden></div>
-    <div class="track" id="track"></div>
-    <div class="buslist" id="busList"></div>
+    <div id="diagram"></div>
     <div class="live-msg" id="liveMsg"></div>
   </section>
 
@@ -396,26 +427,97 @@ function renderLive(){
     near.hidden = true;
   }
 
-  // 노선 막대
-  const tr = $("track");
-  tr.style.setProperty("--tp", pos(turn) + "%");
-  tr.innerHTML = `<div class="ln"></div>
-    <div class="mk" style="left:${pos(turn)}%">✈ 공항 회차</div>
-    ${tg ? `<div class="tg" style="left:${pos(tg.seq)}%">▲ 내 정류장</div>` : ""}
-    <div class="ends" style="left:0">${st[0].name.slice(0, 8)}</div>
-    <div class="ends" style="right:0;text-align:right">${tg && pos(tg.seq) > 80 ? "" : st[st.length - 1].name.slice(0, 8)}</div>
-    ${buses.map(b => `<div class="bus ${dir(b)}" style="left:${pos(b.seq)}%" title="${b.stationName}"></div>`).join("")}`;
+  // 가장 가까운 버스 (아이콘 강조용)
+  const nearBus = tg ? buses.filter(b => b.seq <= tg.seq).sort((a, b) => b.seq - a.seq)[0] : null;
+  $("diagram").innerHTML = buildDiagram(st, turn, buses, tg, nearBus);
+}
 
-  // 버스 목록
-  $("busList").innerHTML = buses.length
-    ? buses.map(b => {
-        const seat = b.seats >= 0 ? "잔여 " + b.seats + "석" : (CROWD[b.crowded] || "");
-        const plate = (b.plate || "").slice(-4);
-        return `<div><span class="badge ${dir(b)}">${dir(b) === "o" ? "공항행" : "대화동행"}</span>
-          <span class="nm">${cleanName(b.stationName) || b.seq + "번째 정류장"}</span>
-          <span class="mt">${[seat, plate].filter(Boolean).join("<br>")}</span></div>`;
-      }).join("")
-    : `<div><span class="nm" style="color:var(--sub);font-weight:500">지금 운행 중인 버스가 없습니다</span></div>`;
+// ===== 2열 노선도 =====
+const BUS_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M4 11h16"/><path d="M8 7h8"/><path d="M7 18v2.5M17 18v2.5"/><circle cx="8" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg>`;
+
+// 공항 정류장은 알아보기 쉬운 이름으로
+const NICE = {
+  "인천국제공항(3층)": "✈ 인천공항 T1",
+  "인천공항9B": "✈ 인천공항 T1 (9B)",
+  "인천공항B1층입국장(T2)": "✈ 인천공항 T2 (B1)",
+  "인천공항3층출국장(T2)": "✈ 인천공항 T2",
+};
+const keyName = s => cleanName(s.name).trim();
+const niceName = s => {
+  const n = NICE[s.name];
+  return n ? `<span class="air">${n}</span>` : cleanName(s.name).replace(/\./g, "·");
+};
+
+function buildDiagram(st, turn, buses, tg, nearBus){
+  const real = s => !isWaypoint(s.name);
+  const O = st.filter(s => s.seq < turn && real(s));            // 공항행 (위→아래)
+  const R = st.filter(s => s.seq > turn && real(s)).reverse();  // 대화동행 (아래→위로 그리기 위해 뒤집음)
+  const turnSt = st.find(s => s.seq === turn) || { seq: turn, name: "인천공항 회차" };
+
+  // 같은 이름 정류장을 같은 줄에 맞춤 (최장 공통 부분열)
+  const n = O.length, m = R.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--)
+    for (let j = m - 1; j >= 0; j--)
+      dp[i][j] = keyName(O[i]) === keyName(R[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const rows = [];
+  let i = 0, j = 0, Ls = [], Rs = [];
+  const flush = () => {
+    for (let t = 0; t < Math.max(Ls.length, Rs.length); t++) rows.push({ L: Ls[t] || null, R: Rs[t] || null });
+    Ls = []; Rs = [];
+  };
+  while (i < n || j < m){
+    if (i < n && j < m && keyName(O[i]) === keyName(R[j])){ flush(); rows.push({ L: O[i], R: R[j] }); i++; j++; }
+    else if (j >= m || (i < n && dp[i + 1][j] >= dp[i][j + 1])){ Ls.push(O[i]); i++; }
+    else { Rs.push(R[j]); j++; }
+  }
+  flush();
+
+  // 버스를 칸에 배치: at=정류장, down=아래로 이동 중, up=위로 이동 중
+  const slots = {};
+  const put = (k, b, pos) => (slots[k] = slots[k] || []).push({ b, pos });
+  for (const b of buses){
+    if (b.seq === turn){ put("turn", b, "at"); continue; }
+    if (b.seq < turn){
+      const last = O.filter(s => s.seq <= b.seq).pop() || O[0];
+      const r = rows.findIndex(x => x.L === last);
+      put("L" + r, b, last.seq === b.seq ? "at" : "down");
+    } else {
+      const passed = R.filter(s => s.seq <= b.seq);
+      if (!passed.length){ put("turnR", b, "up"); continue; }
+      const last = passed.reduce((a, c) => (c.seq > a.seq ? c : a));
+      const r = rows.findIndex(x => x.R === last);
+      put("R" + r, b, last.seq === b.seq ? "at" : "up");
+    }
+  }
+  const icons = (k, cls) => (slots[k] || []).map(({ b, pos }, idx, arr) => {
+    const off = (idx - (arr.length - 1) / 2) * 16 + (pos === "at" ? 0 : cls === "o" ? -14 : 14);
+    const where = cleanName(b.stationName) || "";
+    return `<div class="bus ${cls} ${pos === "at" ? "" : pos}${b === nearBus ? " hl" : ""}"
+      style="left:calc(50% + ${off}px)" title="${(b.plate || "").slice(-4)} · ${where}">${BUS_SVG}</div>`;
+  }).join("");
+
+  const isMe = s => tg && s && s.seq === tg.seq;
+  let html = `<div class="rhead"><span class="o">공항행 ↓</span><span class="r">↑ 대화동행</span></div><div class="route">`;
+  rows.forEach((row, r) => {
+    const same = row.L && row.R && keyName(row.L) === keyName(row.R);
+    const me = isMe(row.R) ? `<span class="metag">내 정류장</span>` : "";
+    const names = same
+      ? `<div class="nm c">${niceName(row.L)}${me}</div>`
+      : `<div class="nm l">${row.L ? niceName(row.L) : ""}</div><div class="nm r">${row.R ? niceName(row.R) + me : ""}</div>`;
+    html += `<div class="row${isMe(row.R) ? " me" : ""}">
+      <div class="lane L">${row.L ? `<span class="stop"></span>` : ""}${icons("L" + r, "o")}</div>
+      <div class="names">${names}</div>
+      <div class="lane R">${row.R ? `<span class="stop"></span>` : ""}${icons("R" + r, "r")}</div>
+    </div>`;
+  });
+  html += `<div class="row turn${isMe(turnSt) ? " me" : ""}">
+      <div class="lane L"></div>
+      <div class="tpill">${(slots.turn || []).map(({ b }) => `<span class="bus o inl${b === nearBus ? " hl" : ""}" title="${(b.plate || "").slice(-4)}">${BUS_SVG}</span>`).join("")}${NICE[turnSt.name] || "✈ " + cleanName(turnSt.name)} · 회차${isMe(turnSt) ? `<span class="metag">내 정류장</span>` : ""}</div>
+      <div class="lane R">${icons("turnR", "r")}</div>
+    </div></div>`;
+  html += `<div class="legend2"><span><i style="background:var(--out)"></i>공항행 버스</span><span><i style="background:var(--ret)"></i>대화동행 버스</span><span><i style="background:var(--sub);width:10px;height:10px"></i>작은 아이콘 = 정류장 사이 이동 중</span>${buses.length ? "" : "<span>운행 중인 버스 없음</span>"}</div>`;
+  return html;
 }
 
 $("liveBtn").onclick = fetchLive;
