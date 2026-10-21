@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="3300번">
+<meta name="theme-color" content="#0f172a">
+<title>3300번 다음 버스</title>
+<style>
+  :root{
+    --bg:#f3f5f9; --card:#ffffff; --text:#0f172a; --sub:#64748b; --line:#e2e8f0;
+    --accent:#e11d48; --accent-soft:#ffe4e9; --past:#cbd5e1; --chg:#facc15;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0b1120; --card:#131c2e; --text:#e2e8f0; --sub:#94a3b8; --line:#1e293b;
+      --accent:#fb7185; --accent-soft:#3b1d2a; --past:#334155; --chg:#eab308;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:480px;margin:0 auto;padding:16px 16px calc(32px + env(safe-area-inset-bottom))}
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin:8px 0 16px}
+  .route{font-size:13px;color:var(--sub);font-weight:600;letter-spacing:.02em}
+  h1{margin:2px 0 0;font-size:26px;font-weight:800}
+  h1 .no{color:var(--accent)}
+  .clock{text-align:right}
+  .clock .t{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .clock .z{font-size:11px;color:var(--sub)}
+
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:4px;gap:4px;margin-bottom:14px}
+  .seg button{border:0;background:transparent;color:var(--sub);font:inherit;font-weight:700;font-size:14px;
+    padding:10px 4px;border-radius:10px;cursor:pointer}
+  .seg button small{display:block;font-size:11px;font-weight:500;opacity:.8}
+  .seg button.on{background:var(--accent);color:#fff}
+
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:12px}
+  .hero .lbl{font-size:13px;color:var(--sub);font-weight:600}
+  .hero .dep{font-size:56px;font-weight:800;line-height:1.05;margin:6px 0 4px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .hero .left{font-size:18px;font-weight:700;color:var(--accent)}
+  .hero .cd{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;margin-top:2px}
+  .hero .note{margin-top:10px;font-size:12px;color:var(--sub)}
+  .after{display:flex;gap:8px;margin-top:16px}
+  .after div{flex:1;background:var(--bg);border-radius:12px;padding:10px 12px}
+  .after b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+  .after span{font-size:12px;color:var(--sub)}
+
+  .listhead{display:flex;justify-content:space-between;align-items:center;margin:20px 4px 8px}
+  .listhead h2{font-size:15px;margin:0}
+  .listhead span{font-size:12px;color:var(--sub)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .grid div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 0;text-align:center;
+    font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;position:relative}
+  .grid .past{color:var(--past);font-weight:500}
+  .grid .next{background:var(--accent);border-color:var(--accent);color:#fff}
+  .grid .chg::after{content:"";position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--chg)}
+  .legend{font-size:11px;color:var(--sub);margin:8px 4px 0}
+  .legend i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--chg);margin-right:4px;vertical-align:middle}
+  footer{margin-top:24px;font-size:11px;color:var(--sub);line-height:1.6;text-align:center}
+  .loc{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 2px 12px;font-size:13px;color:var(--sub)}
+  .loc b{color:var(--text)}
+  .loc button{border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:12px;font-weight:600;
+    padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap}
+
+  /* 실시간 위치 */
+  :root{--out:#e11d48;--ret:#2563eb}
+  @media (prefers-color-scheme: dark){:root{--out:#fb7185;--ret:#60a5fa}}
+  .live{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px 18px;margin-bottom:12px}
+  .live[hidden]{display:none}
+  .live-h{display:flex;justify-content:space-between;align-items:center}
+  .live-h h2{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
+  .dot-live{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 1.6s infinite}
+  .dot-live.off{background:var(--past);animation:none}
+  @keyframes pulse{70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  .live-h button{border:0;background:transparent;color:var(--sub);font:inherit;font-size:12px;cursor:pointer;padding:4px}
+  .near{margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--bg)}
+  .near .k{font-size:12px;color:var(--sub);font-weight:600}
+  .near .v{font-size:20px;font-weight:800;margin-top:2px}
+  .near .s{font-size:13px;color:var(--sub);margin-top:2px}
+  .track{position:relative;height:46px;margin:14px 6px 4px}
+  .track .ln{position:absolute;left:0;right:0;top:20px;height:4px;border-radius:2px;
+    background:linear-gradient(90deg,var(--out) 0 var(--tp,50%),var(--ret) var(--tp,50%) 100%);opacity:.25}
+  .track .bus{position:absolute;top:13px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:2px solid var(--card);
+    display:grid;place-items:center;font-size:10px;color:#fff;font-weight:800}
+  .track .bus.o{background:var(--out)} .track .bus.r{background:var(--ret)}
+  .track .mk{position:absolute;top:-2px;transform:translateX(-50%);font-size:11px;color:var(--sub);white-space:nowrap;font-weight:600}
+  .track .tg{position:absolute;top:32px;transform:translateX(-50%);font-size:11px;color:var(--text);font-weight:700;white-space:nowrap}
+  .track .ends{position:absolute;top:32px;font-size:11px;color:var(--sub)}
+  .buslist{margin-top:10px;border-top:1px solid var(--line)}
+  .buslist div{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .buslist div:last-child{border-bottom:0}
+  .badge{font-size:11px;font-weight:700;color:#fff;padding:2px 7px;border-radius:999px;flex:none}
+  .badge.o{background:var(--out)} .badge.r{background:var(--ret)}
+  .buslist .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .buslist .mt{font-size:12px;color:var(--sub);flex:none;text-align:right}
+  .live-msg{font-size:13px;color:var(--sub);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="route">대화동 ↔ 인천공항</div>
+      <h1><span class="no">3300</span>번 다음 버스</h1>
+    </div>
+    <div class="clock"><div class="t" id="clock">--:--:--</div><div class="z">한국시간 (KST)</div></div>
+  </header>
+
+  <nav class="seg" id="seg">
+    <button data-k="dh">대화동<small>공항 방면</small></button>
+    <button data-k="t2">T2<small>대화동 방면</small></button>
+    <button data-k="t1">T1<small>대화동 방면</small></button>
+  </nav>
+  <div class="loc"><span id="locMsg">📍 위치 확인 중…</span><button id="locBtn">현재 위치로</button></div>
+
+  <section class="hero">
+    <div class="lbl" id="heroLbl">다음 출발</div>
+    <div class="dep" id="heroDep">--:--</div>
+    <div class="left" id="heroLeft"></div>
+    <div class="cd" id="heroCd"></div>
+    <div class="after" id="after"></div>
+    <div class="note" id="heroNote"></div>
+  </section>
+
+  <section class="live" id="live" hidden>
+    <div class="live-h">
+      <h2><span class="dot-live" id="liveDot"></span>실시간 버스 위치 <span id="liveCnt" style="color:var(--sub);font-weight:600"></span></h2>
+      <button id="liveBtn">↻ <span id="liveAt">--:--:--</span></button>
+    </div>
+    <div class="near" id="near" hidden></div>
+    <div class="track" id="track"></div>
+    <div class="buslist" id="busList"></div>
+    <div class="live-msg" id="liveMsg"></div>
+  </section>
+
+  <div class="listhead"><h2 id="listTitle">전체 시간표</h2><span id="count"></span></div>
+  <div class="grid" id="grid"></div>
+  <div class="legend"><i></i>2026.1.15 변경된 시간</div>
+
+  <footer>
+    2026년 1월 15일 개정 시간표 기준 · 주식회사 명성 (031-915-0388)<br>
+    도로 및 교통 상황에 따라 운행시간은 변경될 수 있습니다.
+  </footer>
+</div>
+
+<script>
+// ===== 시간표 데이터 (2026.1.15 개정) =====
+const STOPS = {
+  dh: { name: "대화동 출발", to: "인천공항 방면",
+    times: ["4:15","4:30","4:45","5:00","5:15","5:35","5:55","6:15","6:35","6:55","7:15","7:35","7:55","8:15","8:35","8:55","9:15","9:35","9:55","10:15","10:35","10:55","11:10","11:30","11:50","12:10","12:30","12:50","13:10","13:30",
+            "13:50","14:10","14:30","14:50","15:10","15:30","15:50","16:10","16:25","16:45","17:05","17:30","17:50","18:10","18:30","18:50","19:10","19:30","19:50","20:10","20:30","20:50","21:10","21:30","21:45"],
+    changed: ["16:25","16:45","17:05"] },
+  t2: { name: "인천공항 T2 출발", to: "대화동 방면",
+    times: ["5:45","6:00","6:15","6:30","6:45","7:05","7:25","7:45","8:05","8:25","8:45","9:05","9:25","9:45","10:05","10:25","10:45","11:05","11:25","11:45","12:05","12:25","12:40","13:00","13:20","13:40","14:00","14:20","14:40","15:00",
+            "15:20","15:40","16:00","16:20","16:40","17:00","17:20","17:40","17:55","18:15","18:35","19:00","19:20","19:40","20:00","20:20","20:40","21:00","21:20","21:40","22:00","22:20","22:40","23:00","23:15"],
+    changed: ["17:55","18:15","18:35"] },
+  t1: { name: "인천공항 T1 출발", to: "대화동 방면",
+    times: ["6:05","6:20","6:35","6:50","7:05","7:25","7:45","8:05","8:25","8:45","9:05","9:25","9:45","10:05","10:25","10:45","11:05","11:25","11:45","12:05","12:25","12:45","13:00","13:20","13:40","14:00","14:20","14:40","15:00","15:20",
+            "15:40","16:00","16:20","16:40","17:00","17:20","17:40","18:00","18:15","18:30","18:50","19:20","19:40","20:00","20:20","20:40","21:00","21:20","21:40","22:00","22:20","22:40","23:00","23:20","23:35"],
+    changed: ["18:15","18:30","18:50"] }
+};
+
+// ===== 유틸 =====
+const toMin = s => { const [h,m] = s.split(":").map(Number); return h*60+m; };
+const pad = n => String(n).padStart(2,"0");
+const fmt = s => { const [h,m] = s.split(":"); return pad(h)+":"+m; };
+
+// 기기 시간대와 관계없이 항상 한국시간(KST) 기준 — 해외 체류 중에도 정확
+function nowKST(){
+  const p = {};
+  new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Seoul",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"})
+    .formatToParts(new Date()).forEach(x => p[x.type] = x.value);
+  const h = +p.hour % 24, m = +p.minute, s = +p.second;
+  return { h, m, s, sec: h*3600 + m*60 + s };
+}
+
+function humanLeft(sec){
+  if (sec < 60) return "곧 출발";
+  const min = Math.floor(sec/60);
+  if (min < 60) return min + "분 후";
+  const h = Math.floor(min/60), r = min%60;
+  return h + "시간" + (r ? " " + r + "분" : "") + " 후";
+}
+function countdown(sec){
+  const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
+  return (h ? h + ":" + pad(m) : m) + ":" + pad(s);
+}
+
+// ===== 상태 =====
+let key = "dh";
+try { const k = localStorage.getItem("bus3300_stop"); if (STOPS[k]) key = k; } catch(e){}
+let lastNextIdx = null;
+
+function select(k){
+  key = k; lastNextIdx = null;
+  try { localStorage.setItem("bus3300_stop", k); } catch(e){}
+  render(true);
+  renderLive();
+}
+document.querySelectorAll("#seg button").forEach(b => b.onclick = () => select(b.dataset.k));
+
+function render(scroll){
+  const now = nowKST();
+  document.getElementById("clock").textContent = pad(now.h)+":"+pad(now.m)+":"+pad(now.s);
+  document.querySelectorAll("#seg button").forEach(b => b.classList.toggle("on", b.dataset.k === key));
+
+  const st = STOPS[key];
+  const mins = st.times.map(toMin);
+  let idx = mins.findIndex(m => m*60 > now.sec);
+  const tomorrow = idx === -1;
+  if (tomorrow) idx = 0;
+
+  const depSec = mins[idx]*60 + (tomorrow ? 86400 : 0);
+  const left = depSec - now.sec;
+
+  document.getElementById("heroLbl").textContent = st.name + " · " + st.to + (tomorrow ? " · 내일 첫차" : "");
+  document.getElementById("heroDep").textContent = fmt(st.times[idx]);
+  document.getElementById("heroLeft").textContent = humanLeft(left);
+  document.getElementById("heroCd").textContent = "남은 시간 " + countdown(left);
+
+  // 그 다음 버스 2대
+  const after = [];
+  for (let i = 1; i <= 2; i++){
+    const j = idx + i;
+    if (j >= st.times.length) break;
+    const sec = mins[j]*60 + (tomorrow ? 86400 : 0) - now.sec;
+    after.push(`<div><span>${i===1?"그 다음":"다다음"}</span><b>${fmt(st.times[j])}</b><span>${humanLeft(sec)}</span></div>`);
+  }
+  document.getElementById("after").innerHTML = after.join("") ||
+    `<div><span>안내</span><b style="font-size:16px">막차입니다</b></div>`;
+
+  document.getElementById("heroNote").textContent = tomorrow
+    ? "오늘 운행이 종료되었습니다. 막차 " + fmt(st.times[st.times.length-1])
+    : (idx === st.times.length-1 ? "⚠ 오늘 막차입니다" : "");
+
+  // 전체 시간표 (분이 바뀔 때만 다시 그림)
+  if (lastNextIdx !== idx + (tomorrow ? 1000 : 0)){
+    lastNextIdx = idx + (tomorrow ? 1000 : 0);
+    document.getElementById("listTitle").textContent = st.name + " 전체 시간표";
+    const remain = tomorrow ? 0 : st.times.length - idx;
+    document.getElementById("count").textContent = "오늘 남은 " + remain + "회 / 총 " + st.times.length + "회";
+    document.getElementById("grid").innerHTML = st.times.map((t,i) => {
+      const c = [];
+      if (!tomorrow && i < idx) c.push("past");
+      if (i === idx) c.push("next");
+      if (st.changed.includes(t)) c.push("chg");
+      return `<div class="${c.join(" ")}">${fmt(t)}</div>`;
+    }).join("");
+  }
+  if (scroll){
+    const el = document.querySelector("#grid .next");
+    if (el && el.offsetTop > innerHeight) el.scrollIntoView({block:"center"});
+  }
+}
+
+// ===== 위치 기반 자동 선택 =====
+// 터미널 반경(RADIUS_KM) 안이면 해당 터미널, 그 외에는 대화동
+const TERMINALS = {
+  t1: { name: "인천공항 제1터미널", lat: 37.4492, lng: 126.4510 },
+  t2: { name: "인천공항 제2터미널", lat: 37.4687, lng: 126.4335 }
+};
+const RADIUS_KM = 1.2;
+
+function distKm(a, b, c, d){
+  const R = 6371, rad = x => x * Math.PI / 180;
+  const dLat = rad(c - a), dLng = rad(d - b);
+  const h = Math.sin(dLat/2)**2 + Math.cos(rad(a)) * Math.cos(rad(c)) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+const locMsg = document.getElementById("locMsg");
+function locate(){
+  if (!("geolocation" in navigator)){
+    locMsg.textContent = "📍 위치 기능을 지원하지 않는 브라우저입니다";
+    return;
+  }
+  locMsg.textContent = "📍 위치 확인 중…";
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: la, longitude: lo } = pos.coords;
+    let best = null, bestD = Infinity;
+    for (const k in TERMINALS){
+      const d = distKm(la, lo, TERMINALS[k].lat, TERMINALS[k].lng);
+      if (d < bestD){ bestD = d; best = k; }
+    }
+    if (bestD <= RADIUS_KM){
+      select(best);
+      locMsg.innerHTML = `📍 현재 위치: <b>${TERMINALS[best].name}</b>`;
+    } else {
+      select("dh");
+      locMsg.innerHTML = `📍 공항 밖 → <b>대화동 출발</b> 표시`;
+    }
+  }, err => {
+    locMsg.textContent = err.code === 1
+      ? "📍 위치 권한이 꺼져 있어 마지막 선택을 표시합니다"
+      : "📍 위치를 찾지 못해 마지막 선택을 표시합니다";
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+}
+document.getElementById("locBtn").onclick = locate;
+// 탭을 직접 누르면 위치 안내 문구를 수동 선택으로 바꿈
+document.querySelectorAll("#seg button").forEach(b =>
+  b.addEventListener("click", () => { locMsg.textContent = "✋ 직접 선택함"; }));
+
+// ===== 실시간 버스 위치 =====
+// Cloudflare Worker 주소를 넣으세요 (예: "https://bus3300.아이디.workers.dev"). 비우면 실시간 카드 숨김
+const API_URL = "https://bus3300.sapsary1.workers.dev";
+const LIVE_SEC = 30;   // 갱신 주기(초) — 개발계정 일일 호출 한도 고려
+
+let live = null, liveErr = "", liveAt = null, liveBusy = false;
+const $ = id => document.getElementById(id);
+const CROWD = { 1: "여유", 2: "보통", 3: "혼잡", 4: "매우혼잡" };
+const RX = {
+  t1: /(제\s*1|1\s*여객|T1)/i,
+  t2: /(제\s*2|2\s*여객|T2)/i,
+};
+const isAirport = n => /공항|터미널/.test(n);
+const isWaypoint = n => /\(경유\)/.test(n);            // 통과 지점(정류장 아님)
+const cleanName = n => (n || "").replace(/\(경유\)/, " 부근").replace(/\(중\)/, "");
+
+async function fetchLive(){
+  if (!API_URL || liveBusy) return;
+  liveBusy = true;
+  try {
+    const r = await fetch(API_URL.replace(/\/$/, "") + "/bus", { cache: "no-store" });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || "응답 오류");
+    live = j; liveErr = ""; liveAt = nowKST();
+  } catch (e) {
+    liveErr = e.message || "연결 실패";
+  } finally {
+    liveBusy = false;
+    renderLive();
+  }
+}
+
+// 노선의 회차 지점과 내가 탈 정류장(탭 기준)의 순번 계산
+function stopsInfo(st){
+  const last = st[st.length - 1].seq;
+  let turn = live.turnSeq;
+  const t2 = st.find(s => isAirport(s.name) && RX.t2.test(s.name));
+  if (!turn) turn = t2 ? t2.seq : Math.round(last / 2);
+  // 대화동 방면 승차 정류장 (실제 노선 데이터 기준), 이름이 바뀌면 규칙으로 대체
+  const after = s => s.seq >= turn && !isWaypoint(s.name);
+  const target = {
+    dh: null,
+    t2: st.find(s => after(s) && /입국장/.test(s.name) && RX.t2.test(s.name))
+        || st.find(s => s.seq === turn) || t2 || null,
+    t1: st.find(s => after(s) && /^인천공항9B/.test(s.name))
+        || st.find(s => after(s) && isAirport(s.name) && RX.t1.test(s.name)) || null,
+  };
+  return { first: st[0].seq, last, turn, target };
+}
+
+function renderLive(){
+  const box = $("live");
+  if (!API_URL){ box.hidden = true; return; }
+  box.hidden = false;
+  $("liveAt").textContent = liveAt ? pad(liveAt.h)+":"+pad(liveAt.m)+":"+pad(liveAt.s) : "--:--:--";
+  $("liveDot").classList.toggle("off", !!liveErr || !live);
+
+  if (!live){
+    $("liveMsg").textContent = liveErr ? "⚠ " + liveErr : "불러오는 중…";
+    return;
+  }
+  $("liveMsg").textContent = liveErr ? "⚠ 갱신 실패: " + liveErr + " (마지막 정보 표시 중)" : "";
+
+  const st = live.stations;
+  if (!st || !st.length){ $("liveMsg").textContent = "정류장 정보가 없습니다"; return; }
+  const { first, last, turn, target } = stopsInfo(st);
+  const pos = seq => ((seq - first) / Math.max(1, last - first)) * 100;
+  const buses = (live.buses || []).slice().sort((a, b) => a.seq - b.seq);
+  const dir = b => b.seq < turn ? "o" : "r";
+  $("liveCnt").textContent = "· 운행 " + buses.length + "대";
+
+  // 내 정류장 기준 가장 가까운 버스
+  const tg = target[key];
+  const near = $("near");
+  if (tg){
+    near.hidden = false;
+    const coming = buses.filter(b => b.seq <= tg.seq).sort((a, b) => b.seq - a.seq);
+    // 남은 정거장 = 버스 위치 이후 ~ 내 정류장까지의 실제 정류장 수 (경유 지점 제외)
+    const stopsLeft = b => st.filter(s => s.seq > b.seq && s.seq <= tg.seq && !isWaypoint(s.name)).length;
+    if (coming.length){
+      const b = coming[0], n = stopsLeft(b);
+      near.innerHTML = `<div class="k">${cleanName(tg.name)} 기준 가장 가까운 버스</div>
+        <div class="v">${b.seq === tg.seq ? "정류장 도착 / 정차 중" : n <= 1 ? "곧 도착 (다음 정류장)" : n + "정거장 전"}</div>
+        <div class="s">현재 ${cleanName(b.stationName) || b.seq + "번째 정류장"}${b.seats >= 0 ? " · 잔여 " + b.seats + "석" : ""}</div>`;
+    } else {
+      near.innerHTML = `<div class="k">${cleanName(tg.name)} 기준</div><div class="v">접근 중인 버스 없음</div>`;
+    }
+  } else {
+    near.hidden = true;
+  }
+
+  // 노선 막대
+  const tr = $("track");
+  tr.style.setProperty("--tp", pos(turn) + "%");
+  tr.innerHTML = `<div class="ln"></div>
+    <div class="mk" style="left:${pos(turn)}%">✈ 공항 회차</div>
+    ${tg ? `<div class="tg" style="left:${pos(tg.seq)}%">▲ 내 정류장</div>` : ""}
+    <div class="ends" style="left:0">${st[0].name.slice(0, 8)}</div>
+    <div class="ends" style="right:0;text-align:right">${tg && pos(tg.seq) > 80 ? "" : st[st.length - 1].name.slice(0, 8)}</div>
+    ${buses.map(b => `<div class="bus ${dir(b)}" style="left:${pos(b.seq)}%" title="${b.stationName}"></div>`).join("")}`;
+
+  // 버스 목록
+  $("busList").innerHTML = buses.length
+    ? buses.map(b => {
+        const seat = b.seats >= 0 ? "잔여 " + b.seats + "석" : (CROWD[b.crowded] || "");
+        const plate = (b.plate || "").slice(-4);
+        return `<div><span class="badge ${dir(b)}">${dir(b) === "o" ? "공항행" : "대화동행"}</span>
+          <span class="nm">${cleanName(b.stationName) || b.seq + "번째 정류장"}</span>
+          <span class="mt">${[seat, plate].filter(Boolean).join("<br>")}</span></div>`;
+      }).join("")
+    : `<div><span class="nm" style="color:var(--sub);font-weight:500">지금 운행 중인 버스가 없습니다</span></div>`;
+}
+
+$("liveBtn").onclick = fetchLive;
+
+render(false);
+locate();
+renderLive();
+fetchLive();
+setInterval(() => render(false), 1000);
+setInterval(() => { if (!document.hidden) fetchLive(); }, LIVE_SEC * 1000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden){ lastNextIdx = null; render(false); locate(); fetchLive(); }
+});
+</script>
+</body>
+</html>

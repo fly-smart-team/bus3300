@@ -1,0 +1,46 @@
+# 3300번 다음 버스
+
+대화동 ↔ 인천공항(T1/T2) 3300번 버스의 **다음 출발 시간**을 열자마자 보여주는 웹페이지입니다.
+
+## 기능
+- **위치 자동 감지**: 인천공항 T1 근처 → T1 출발, T2 근처 → T2 출발, 그 외 → 대화동 출발 (반경 1.2km, `RADIUS_KM`로 조정)
+- 정류장 직접 선택도 가능: 대화동 / T2 / T1 (위치 권한이 없으면 마지막 선택 기억)
+- 위치 권한은 HTTPS에서만 동작 → GitHub Pages 주소로 열어야 합니다 (파일을 직접 열면 위치 감지 안 됨)
+- 다음 버스 시각 + 남은 시간 실시간 카운트다운, 그 다음 2대 미리보기
+- 막차 이후에는 내일 첫차 안내
+- 기기 시간대와 관계없이 **한국시간(KST) 기준** 계산 → 해외에서 열어도 정확
+- 다크모드 자동 지원, 2026.1.15 변경 시간 표시
+- **실시간 버스 위치**: 운행 중인 3300번의 현재 정류장, 방향(공항행/대화동행), 잔여석, 내 정류장까지 남은 정거장 수 (30초마다 갱신)
+
+## GitHub Pages 배포
+1. 새 저장소 생성 (예: `bus3300`)
+2. `index.html`, `README.md` 업로드 (`worker.js`는 올려도 됨 — 키는 들어있지 않음)
+3. **Settings → Pages → Branch: `main` / `(root)`** → Save
+4. 1~2분 후 `https://<아이디>.github.io/bus3300/` 접속
+5. 휴대폰에서 열고 **홈 화면에 추가**하면 앱처럼 사용 가능
+
+## 실시간 위치 설정 (Cloudflare Worker)
+공공데이터 인증키를 GitHub에 올리지 않기 위해 무료 Cloudflare Worker를 중계 서버로 씁니다.
+
+1. 공공데이터포털에서 **경기도_버스위치정보 조회**, **경기도_버스노선 조회** 두 가지 활용신청
+2. 마이페이지에서 **일반 인증키 (Decoding)** 복사
+3. [dash.cloudflare.com](https://dash.cloudflare.com) 가입 → **Workers & Pages → Create → Worker** → 이름 `bus3300` → Deploy
+4. **Edit code** → 기존 코드 전부 지우고 `worker.js` 내용 붙여넣기 → Deploy
+5. Worker의 **Settings → Variables and Secrets → Add**
+   - `SERVICE_KEY` (Type: Secret) = 2번에서 복사한 키
+   - `ALLOWED_ORIGIN` (선택) = `https://아이디.github.io`
+6. 브라우저에서 `https://bus3300.<계정>.workers.dev/bus` 열어 `"ok":true` 확인
+7. `index.html`의 `const API_URL = "";` 따옴표 안에 Worker 주소 입력 후 GitHub에 다시 업로드
+
+**문제 해결**
+- `SERVICE_KEY_IS_NOT_REGISTERED` → 키 승인 직후엔 1~2시간 걸릴 수 있음. 잠시 후 재시도
+- `3300번 노선을 찾지 못했습니다` → `/routes` 주소를 열어 맞는 `routeId`를 찾고, Worker 변수 `ROUTE_ID`에 입력
+- "내 정류장" 표시가 안 나옴 → 정류장 이름 규칙이 예상과 다른 경우. `/bus` 결과의 정류장 이름을 알려주면 맞춰 수정
+- 개발계정은 하루 호출 한도가 있음. Worker가 15초 캐시하고 페이지는 화면이 켜져 있을 때만 30초마다 갱신. 부족하면 포털에서 운영계정 신청
+
+## 시간표 수정
+`index.html` 안의 `STOPS` 객체에서 `times` 배열만 고치면 됩니다.
+
+---
+기준: 2026년 1월 15일 개정 시간표 (주식회사 명성, 031-915-0388)
+도로 및 교통 상황에 따라 실제 운행시간은 달라질 수 있습니다.
