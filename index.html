@@ -329,36 +329,44 @@ function liveEtas(stp, nowSec){
 let nowAdjSec = 0;
 
 // ===== 상태 =====
-let key = "dh";
-let autoMode = true;   // true면 위치에 따라 자동 선택
-try {
-  const k = localStorage.getItem("bus3300_stop");
-  if (STOPS[k] || (k && k.startsWith("s:") && midInfo(+k.slice(2)))) key = k;
-  autoMode = localStorage.getItem("bus3300_auto") !== "0";
-} catch(e){}
-let lastCustom = key.startsWith("s:") ? key : "s:8";
-try { const c = localStorage.getItem("bus3300_custom"); if (c && midInfo(+c.slice(2))) lastCustom = c; } catch(e){}
+// 각자 휴대폰 브라우저에 저장 (사람마다 따로): 내 정류장 = 공항 밖에서 열면 먼저 보여줄 정류장
+const validKey = k => !!(STOPS[k] || (k && k.startsWith("s:") && midInfo(+k.slice(2))));
+let myStop = "dh";
+try { const m = localStorage.getItem("bus3300_mystop"); if (validKey(m)) myStop = m; } catch(e){}
+let key = myStop;
+let lastCustom = myStop.startsWith("s:") ? myStop : "s:8";
+let manual = false;   // 이번에 화면을 보는 동안 탭을 직접 눌렀는지 (저장 안 함)
 
-// 정류장 선택 목록
+const stopLabel = k => k === "dh" ? "대화동 출발" : (midInfo(+k.slice(2)) || {}).name + (midInfo(+k.slice(2)).dir === "O" ? " (공항 방면)" : " (대화동 방면)");
+
+// 정류장 선택 목록 — 여기서 고른 것만 '내 정류장'으로 저장
 (function buildPicker(){
   const grp = (d, label) => `<optgroup label="${label}">` + MID_STOPS[d].map(r =>
     `<option value="s:${r[0]}">${r[1]}${r[2] ? " · " + r[2] : ""}</option>`).join("") + `</optgroup>`;
-  document.getElementById("stopSel").innerHTML =
-    grp("O", "공항 방면 승차 · To Airport") + grp("R", "대화동 방면 승차 · To Daehwa-dong");
-  document.getElementById("stopSel").onchange = e => { setAuto(false); select(e.target.value); };
+  const sel = document.getElementById("stopSel");
+  sel.innerHTML = `<option value="dh">대화동 (출발) · Daehwa-dong</option>`
+    + grp("O", "공항 방면 승차 · To Airport") + grp("R", "대화동 방면 승차 · To Daehwa-dong");
+  sel.onchange = e => {
+    const k = e.target.value;
+    myStop = k;
+    try { localStorage.setItem("bus3300_mystop", k); } catch(_){}
+    if (k.startsWith("s:")) lastCustom = k;
+    manual = true;
+    select(k);
+    locMsg.innerHTML = `⭐ 내 정류장: <b>${stopLabel(k)}</b> 저장됨` + en("Saved as My stop · shown first when you're away from the airport");
+  };
 })();
-function setAuto(v){ autoMode = v; try { localStorage.setItem("bus3300_auto", v ? "1" : "0"); } catch(e){} }
 let lastNextIdx = null;
 
-function select(k, quiet){
+function select(k){
   if (k === "s") k = lastCustom;
+  if (!validKey(k)) k = "dh";
   key = k; lastNextIdx = null;
-  if (k.startsWith("s:")){ lastCustom = k; try { localStorage.setItem("bus3300_custom", k); } catch(e){} }
-  try { localStorage.setItem("bus3300_stop", k); } catch(e){}
+  if (k.startsWith("s:")) lastCustom = k;
   const pick = document.getElementById("stopPick");
   pick.hidden = !k.startsWith("s:");
   if (!pick.hidden) document.getElementById("stopSel").value = k;
-  render(!quiet);
+  render(false);
   renderLive();
 }
 document.querySelectorAll("#seg button").forEach(b => b.onclick = () => select(b.dataset.k));
@@ -442,10 +450,6 @@ function render(scroll){
       return `<div class="${c.join(" ")}">${fmt(t)}</div>`;
     }).join("");
   }
-  if (scroll){
-    const el = document.querySelector("#grid .next");
-    if (el && el.offsetTop > innerHeight) el.scrollIntoView({block:"center"});
-  }
 }
 
 // ===== 위치 기반 자동 선택 =====
@@ -465,49 +469,69 @@ function distKm(a, b, c, d){
 
 const locMsg = document.getElementById("locMsg");
 const STOP_RADIUS_KM = 0.35;   // 일산 중간 정류장 인식 반경
-function locate(force){
-  if (!force && !autoMode){
-    locMsg.innerHTML = "✋ 직접 선택한 정류장 표시 중" + en("Showing your chosen stop · tap Locate for auto");
-    return;
+const LOC_WATCH_MS = 15000;    // 열 때 위치를 받는 시간 (가장 정확한 값 사용)
+const LOC_MAX_AGE_MS = 120000; // 2분 넘은 위치는 버림
+
+// 위치 → 보여줄 정류장
+function decide(la, lo){
+  let best = null, bestD = Infinity;
+  for (const k in TERMINALS){
+    const d = distKm(la, lo, TERMINALS[k].lat, TERMINALS[k].lng);
+    if (d < bestD){ bestD = d; best = k; }
   }
+  if (bestD <= RADIUS_KM)
+    return { k: best, msg: `📍 현재 위치: <b>${TERMINALS[best].name}</b>`, en: "You are at " + TERMINALS[best].en };
+  let ms = null, msD = Infinity;
+  for (const r of MID_STOPS.O){
+    const d = distKm(la, lo, r[3], r[4]);
+    if (d < msD){ msD = d; ms = r; }
+  }
+  if (ms && msD <= STOP_RADIUS_KM)
+    return { k: "s:" + ms[0], msg: `📍 현재 위치: <b>${ms[1]}</b> 근처 (공항 방면)`, en: "Near " + (ms[2] || ms[1]) + " · to Airport" };
+  return myStop === "dh"
+    ? { k: "dh", msg: `📍 공항 밖 → <b>대화동 출발</b>`, en: "Away from the airport → Daehwa-dong" }
+    : { k: myStop, msg: `📍 공항 밖 → ⭐ 내 정류장 <b>${stopLabel(myStop)}</b>`, en: "Away from the airport → My stop" };
+}
+
+let watchId = null, watchTimer = null, bestAcc = Infinity, lastLoc = null;
+function stopWatch(){
+  if (watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  clearTimeout(watchTimer);
+  if (lastLoc && !manual) locMsg.innerHTML = lastLoc.msg + en(lastLoc.en);
+}
+function locate(){
   if (!("geolocation" in navigator)){
     locMsg.innerHTML = "📍 위치 기능을 지원하지 않는 브라우저입니다" + en("Location not supported");
     return;
   }
-  locMsg.innerHTML = "📍 위치 확인 중…" + en("Finding your location…");
-  navigator.geolocation.getCurrentPosition(pos => {
-    const { latitude: la, longitude: lo } = pos.coords;
-    let best = null, bestD = Infinity;
-    for (const k in TERMINALS){
-      const d = distKm(la, lo, TERMINALS[k].lat, TERMINALS[k].lng);
-      if (d < bestD){ bestD = d; best = k; }
+  stopWatch();
+  bestAcc = Infinity; lastLoc = null;
+  locMsg.innerHTML = "📍 위치 갱신 중…" + en("Updating your location…");
+  // 캐시 위치를 쓰지 않고(maximumAge 0) 몇 초간 받아서 가장 정확한 값으로 판정
+  watchId = navigator.geolocation.watchPosition(pos => {
+    if (Date.now() - pos.timestamp > LOC_MAX_AGE_MS) return;          // 오래된 위치 무시
+    const acc = pos.coords.accuracy || 9999;
+    if (acc >= bestAcc) return;                                          // 더 정확할 때만 반영
+    bestAcc = acc;
+    lastLoc = decide(pos.coords.latitude, pos.coords.longitude);
+    if (!manual){
+      if (key !== lastLoc.k) select(lastLoc.k);
+      locMsg.innerHTML = lastLoc.msg + (acc > 100 ? ` <span style="font-size:11px">(±${Math.round(acc)}m, 갱신 중)</span>` : "") + en(lastLoc.en);
     }
-    // 가장 가까운 공항 방면 중간 정류장
-    let ms = null, msD = Infinity;
-    for (const r of MID_STOPS.O){
-      const d = distKm(la, lo, r[3], r[4]);
-      if (d < msD){ msD = d; ms = r; }
-    }
-    if (bestD <= RADIUS_KM){
-      select(best, true);
-      locMsg.innerHTML = `📍 현재 위치: <b>${TERMINALS[best].name}</b>` + en("You are at " + TERMINALS[best].en);
-    } else if (ms && msD <= STOP_RADIUS_KM){
-      select("s:" + ms[0], true);
-      locMsg.innerHTML = `📍 현재 위치: <b>${ms[1]}</b> 근처 (공항 방면)` + en("Near " + (ms[2] || ms[1]) + " · to Airport");
-    } else {
-      select("dh", true);
-      locMsg.innerHTML = `📍 공항 밖 → <b>대화동 출발</b> 표시` + en("Outside the airport → showing Daehwa-dong");
-    }
+    if (acc <= 50) stopWatch();                                          // 충분히 정확하면 종료
   }, err => {
-    locMsg.innerHTML = err.code === 1
-      ? "📍 위치 권한이 꺼져 있어 마지막 선택을 표시합니다" + en("Location permission off · showing last choice")
-      : "📍 위치를 찾지 못해 마지막 선택을 표시합니다" + en("Location unavailable · showing last choice");
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    stopWatch();
+    if (manual) return;
+    locMsg.innerHTML = (err.code === 1
+      ? "📍 위치 권한이 꺼져 있어 내 정류장을 표시합니다" : "📍 위치를 찾지 못해 내 정류장을 표시합니다")
+      + en(err.code === 1 ? "Location permission off · showing My stop" : "Location unavailable · showing My stop");
+  }, { enableHighAccuracy: true, maximumAge: 0, timeout: LOC_WATCH_MS });
+  watchTimer = setTimeout(stopWatch, LOC_WATCH_MS);
 }
-document.getElementById("locBtn").onclick = () => { setAuto(true); locate(true); };
-// 탭을 직접 누르면 자동 선택을 멈춤 (현재 위치로 버튼을 누르면 다시 자동)
+document.getElementById("locBtn").onclick = () => { manual = false; locate(); };
+// 탭을 직접 누르면 이번에 보는 동안만 그 탭 유지 (다시 열면 위치로 자동 선택)
 document.querySelectorAll("#seg button").forEach(b =>
-  b.addEventListener("click", () => { setAuto(false); locMsg.innerHTML = "✋ 직접 선택함" + en("Selected manually · tap Locate for auto"); }));
+  b.addEventListener("click", () => { manual = true; locMsg.innerHTML = "✋ 직접 선택함" + en("Selected manually · reopen or tap Locate for auto"); }));
 
 // ===== 실시간 버스 위치 =====
 // Cloudflare Worker 주소를 넣으세요 (예: "https://bus3300.아이디.workers.dev"). 비우면 실시간 카드 숨김
@@ -727,15 +751,18 @@ function buildDiagram(st, turn, buses, tg, nearBus){
 
 $("liveBtn").onclick = fetchLive;
 
-select(key, true);
-locate(false);
+select(key);
+locate();
 renderLive();
 fetchLive();
 setInterval(() => render(false), 1000);
 setInterval(() => { if (!document.hidden) fetchLive(); }, LIVE_SEC * 1000);
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden){ lastNextIdx = null; render(false); locate(false); fetchLive(); }
+  // 다른 앱에 갔다가 돌아오면 위치를 새로 확인
+  if (!document.hidden){ manual = false; lastNextIdx = null; render(false); locate(); fetchLive(); }
 });
+// 뒤로가기 캐시로 페이지가 복원될 때도 위치 갱신
+window.addEventListener("pageshow", e => { if (e.persisted){ manual = false; locate(); fetchLive(); } });
 </script>
 </body>
 </html>
