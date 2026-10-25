@@ -1,12 +1,25 @@
 {
+  "id": "./",
   "name": "공항리무진 3300번 BUS",
   "short_name": "리무진 3300",
-  "start_url": "./",
+  "description": "대화동 ↔ 인천공항 공항리무진 3300번 다음 버스 시간과 실시간 위치",
+  "lang": "ko",
+  "start_url": "./?source=app",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f3f5f9",
+  "orientation": "portrait",
+  "background_color": "#0b1120",
   "theme_color": "#e11d48",
+  "categories": ["travel", "navigation"],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "T1에서 대화동 가기", "short_name": "T1 출발", "url": "./?stop=t1", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "T2에서 대화동 가기", "short_name": "T2 출발", "url": "./?stop=t2", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "대화동에서 공항 가기", "short_name": "대화동 출발", "url": "./?stop=dh", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }

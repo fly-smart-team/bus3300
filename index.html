@@ -9,7 +9,9 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1120" media="(prefers-color-scheme: dark)">
+<meta name="description" content="대화동 ↔ 인천공항 공항리무진 3300번 다음 버스 시간과 실시간 위치">
 <title>공항리무진 3300번 BUS</title>
 <style>
   :root{
@@ -86,6 +88,16 @@
   .after .src{margin:4px 0 2px}
   #count{white-space:nowrap;text-align:right}
   .listhead{gap:10px}
+  .install{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:10px 12px;margin:0 0 12px}
+  .install[hidden]{display:none}
+  .install .tx{flex:1;min-width:0;font-size:13px;font-weight:600;line-height:1.35}
+  .install button{border:0;border-radius:10px;font:inherit;font-size:13px;font-weight:800;padding:9px 12px;cursor:pointer;white-space:nowrap}
+  .install .go{background:var(--accent);color:#fff}
+  .install .x{background:transparent;color:var(--sub);padding:9px 4px;font-size:16px}
+  .offline{font-size:12px;font-weight:700;color:#b45309;background:#fef3c7;border-radius:10px;padding:7px 10px;margin:0 0 12px}
+  .offline[hidden]{display:none}
+  @media (prefers-color-scheme: dark){ .offline{background:#422006;color:#fde68a} }
   footer{margin-top:24px;font-size:11px;color:var(--sub);line-height:1.6;text-align:center}
   .loc{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 2px 12px;font-size:13px;color:var(--sub)}
   .loc b{color:var(--text)}
@@ -174,6 +186,13 @@
       <div class="clock"><div class="t" id="clock">--:--:--</div><div class="z">한국시간 · Korea Time</div></div>
     </div>
   </header>
+
+  <div class="install" id="installBar" hidden>
+    <div class="tx" id="installTx">📲 앱으로 설치하면 아이콘을 눌러 바로 열 수 있어요<span class="en">Install as an app for one-tap access</span></div>
+    <button class="go" id="installGo">설치</button>
+    <button class="x" id="installX" aria-label="닫기">✕</button>
+  </div>
+  <div class="offline" id="offlineBar" hidden>📴 오프라인 · 저장된 시간표를 보여줍니다 <span class="en il">Offline · showing saved timetable</span></div>
 
   <nav class="seg" id="seg">
     <button data-k="dh">대화동<small>공항 방면</small><small class="en">To Airport</small></button>
@@ -751,8 +770,12 @@ function buildDiagram(st, turn, buses, tg, nearBus){
 
 $("liveBtn").onclick = fetchLive;
 
+// 앱 바로가기(?stop=t1 등)로 열면 그 탭을 먼저 보여줌
+const qStop = new URLSearchParams(location.search).get("stop");
+if (qStop && validKey(qStop)){ key = qStop; manual = true; }
 select(key);
-locate();
+if (manual) locMsg.innerHTML = "📌 바로가기로 열림" + en("Opened from shortcut · tap Locate for auto");
+else locate();
 renderLive();
 fetchLive();
 setInterval(() => render(false), 1000);
@@ -761,6 +784,41 @@ document.addEventListener("visibilitychange", () => {
   // 다른 앱에 갔다가 돌아오면 위치를 새로 확인
   if (!document.hidden){ manual = false; lastNextIdx = null; render(false); locate(); fetchLive(); }
 });
+// ===== 앱(PWA) =====
+const isApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+if ("serviceWorker" in navigator){
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+// 설치 안내: 크롬이 설치 가능하다고 알려주면 버튼 표시
+let installEvt = null;
+const installBar = $("installBar");
+const dismissed = () => { try { return localStorage.getItem("bus3300_install_x") === "1"; } catch(e){ return false; } };
+addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); installEvt = e;
+  if (!isApp && !dismissed()) installBar.hidden = false;
+});
+$("installGo").onclick = async () => {
+  if (installEvt){
+    installEvt.prompt();
+    const r = await installEvt.userChoice.catch(() => ({}));
+    if (r.outcome === "accepted") installBar.hidden = true;
+    installEvt = null;
+  } else {
+    $("installTx").innerHTML = "브라우저 메뉴 <b>⋮</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>를 누르세요" + en("Browser menu ⋮ → Install app / Add to Home screen");
+    $("installGo").hidden = true;
+  }
+};
+$("installX").onclick = () => { installBar.hidden = true; try { localStorage.setItem("bus3300_install_x", "1"); } catch(e){} };
+addEventListener("appinstalled", () => { installBar.hidden = true; });
+// 설치 이벤트가 안 오는 브라우저(일부 브라우저)는 4초 뒤 수동 안내
+setTimeout(() => { if (!isApp && !installEvt && !dismissed() && /Android/i.test(navigator.userAgent)) installBar.hidden = false; }, 4000);
+
+// 오프라인 표시
+const netState = () => { $("offlineBar").hidden = navigator.onLine; };
+addEventListener("online", () => { netState(); fetchLive(); });
+addEventListener("offline", netState);
+netState();
+
 // 뒤로가기 캐시로 페이지가 복원될 때도 위치 갱신
 window.addEventListener("pageshow", e => { if (e.persisted){ manual = false; locate(); fetchLive(); } });
 </script>
