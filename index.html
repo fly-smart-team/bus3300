@@ -62,6 +62,11 @@
   .grid div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 0;text-align:center;
     font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;position:relative}
   .grid .past{color:var(--past);font-weight:500}
+  .grid.fold .past{display:none}
+  .pasttog{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:0 0 6px;padding:10px;
+    border:1px dashed var(--line);border-radius:10px;background:transparent;color:var(--sub);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .pasttog[hidden]{display:none}
+  .pasttog .en{display:inline;margin:0}
   .grid .next{background:var(--accent);border-color:var(--accent);color:#fff}
   .grid .chg::after{content:"";position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--chg)}
   .legend{font-size:11px;color:var(--sub);margin:8px 4px 0}
@@ -214,7 +219,8 @@
 
 
   <div class="listhead"><h2 id="listTitle">전체 시간표</h2><span id="count"></span></div>
-  <div class="grid" id="grid"></div>
+  <button class="pasttog" id="pastTog" hidden></button>
+  <div class="grid fold" id="grid"></div>
   <div class="legend"><i></i>2026.1.15 변경된 시간 <span class="en il">Changed Jan 15, 2026</span></div>
 
   <section class="live" style="margin-top:20px" id="live" hidden>
@@ -468,8 +474,22 @@ function render(scroll){
       if (st.est) c.push("est");
       return `<div class="${c.join(" ")}">${fmt(t)}</div>`;
     }).join("");
+    pastCount = tomorrow ? 0 : idx;
+    drawPastToggle();
   }
 }
+
+// ===== 지난 시간 접기/펼치기 (기본: 접힘, 이 화면에서만 기억) =====
+let pastOpen = false, pastCount = 0;
+function drawPastToggle(){
+  const tog = document.getElementById("pastTog");
+  tog.hidden = pastCount === 0;
+  document.getElementById("grid").classList.toggle("fold", !pastOpen);
+  tog.innerHTML = pastOpen
+    ? `▴ 지난 시간 접기 <span class="en">· Hide past</span>`
+    : `▾ 지난 시간 ${pastCount}회 보기 <span class="en">· Show ${pastCount} past</span>`;
+}
+document.getElementById("pastTog").onclick = () => { pastOpen = !pastOpen; drawPastToggle(); };
 
 // ===== 위치 기반 자동 선택 =====
 // 터미널 반경(RADIUS_KM) 안이면 해당 터미널, 그 외에는 대화동
