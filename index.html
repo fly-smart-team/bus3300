@@ -106,6 +106,8 @@
   footer{margin-top:24px;font-size:11px;color:var(--sub);line-height:1.6;text-align:center}
   .loc{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 2px 12px;font-size:13px;color:var(--sub)}
   .loc b{color:var(--text)}
+  .radius{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-6px 2px 12px;font-size:12px;color:var(--sub)}
+  .radius select{font:inherit;font-size:12px;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
   .loc button{border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:12px;font-weight:600;
     padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap}
 
@@ -207,6 +209,8 @@
   </nav>
   <div class="stoppick" id="stopPick" hidden><select id="stopSel" aria-label="정류장 선택"></select></div>
   <div class="loc"><span id="locMsg">📍 위치 확인 중…</span><button id="locBtn">현재 위치로 <span class="en il">Locate</span></button></div>
+  <div class="radius"><label for="radSel">📏 가까운 정류장 찾는 범위 <span class="en il">Search radius</span></label>
+    <select id="radSel"><option value="0.5">500m</option><option value="1">1km</option><option value="2">2km</option><option value="3">3km</option><option value="5">5km</option></select></div>
 
   <section class="hero">
     <div class="lbl" id="heroLbl">다음 출발</div>
@@ -356,20 +360,22 @@ let nowAdjSec = 0;
 // ===== 상태 =====
 // 각자 휴대폰 브라우저에 저장 (사람마다 따로): 내 정류장 = 공항 밖에서 열면 먼저 보여줄 정류장
 const validKey = k => !!(STOPS[k] || (k && k.startsWith("s:") && midInfo(+k.slice(2))));
-let myStop = "dh";
+let myStop = null;      // 아직 안 골랐으면 null → 기본은 T2
 try { const m = localStorage.getItem("bus3300_mystop"); if (validKey(m)) myStop = m; } catch(e){}
-let key = myStop;
-let lastCustom = myStop.startsWith("s:") ? myStop : "s:8";
+const DEFAULT_KEY = "t2";
+let key = myStop || DEFAULT_KEY;
+let lastCustom = myStop && myStop.startsWith("s:") ? myStop : "s:8";
 let manual = false;   // 이번에 화면을 보는 동안 탭을 직접 눌렀는지 (저장 안 함)
 
-const stopLabel = k => k === "dh" ? "대화동 출발" : (midInfo(+k.slice(2)) || {}).name + (midInfo(+k.slice(2)).dir === "O" ? " (공항 방면)" : " (대화동 방면)");
+const stopLabel = k => ({ dh: "대화동 출발", t1: "인천공항 T1 출발", t2: "인천공항 T2 출발" })[k]
+  || (midInfo(+k.slice(2)) || {}).name + (midInfo(+k.slice(2)).dir === "O" ? " (공항 방면)" : " (대화동 방면)");
 
 // 정류장 선택 목록 — 여기서 고른 것만 '내 정류장'으로 저장
 (function buildPicker(){
   const grp = (d, label) => `<optgroup label="${label}">` + MID_STOPS[d].map(r =>
     `<option value="s:${r[0]}">${r[1]}${r[2] ? " · " + r[2] : ""}</option>`).join("") + `</optgroup>`;
   const sel = document.getElementById("stopSel");
-  sel.innerHTML = `<option value="dh">대화동 (출발) · Daehwa-dong</option>`
+  sel.innerHTML = `<optgroup label="출발지 · Origin"><option value="t2">인천공항 T2 출발 · Airport T2</option><option value="t1">인천공항 T1 출발 · Airport T1</option><option value="dh">대화동 출발 · Daehwa-dong</option></optgroup>`
     + grp("O", "공항 방면 승차 · To Airport") + grp("R", "대화동 방면 승차 · To Daehwa-dong");
   sel.onchange = e => {
     const k = e.target.value;
@@ -507,7 +513,15 @@ function distKm(a, b, c, d){
 }
 
 const locMsg = document.getElementById("locMsg");
-const STOP_RADIUS_KM = 0.35;   // 일산 중간 정류장 인식 반경
+let STOP_RADIUS_KM = 3;   // 가까운 정류장 찾는 범위 (화면에서 조정, 각자 저장)
+try { const r = parseFloat(localStorage.getItem("bus3300_radius")); if (r > 0) STOP_RADIUS_KM = r; } catch(e){}
+document.getElementById("radSel").value = String(STOP_RADIUS_KM);
+document.getElementById("radSel").onchange = e => {
+  STOP_RADIUS_KM = parseFloat(e.target.value);
+  try { localStorage.setItem("bus3300_radius", e.target.value); } catch(_){}
+  manual = false; locate();
+};
+const ORIGIN_DH = [0, "대화동", "Daehwa-dong", 37.66913, 126.73197];   // 대화동 출발 정류장
 const LOC_WATCH_MS = 15000;    // 열 때 위치를 받는 시간 (가장 정확한 값 사용)
 const LOC_MAX_AGE_MS = 120000; // 2분 넘은 위치는 버림
 
@@ -520,16 +534,20 @@ function decide(la, lo){
   }
   if (bestD <= RADIUS_KM)
     return { k: best, msg: `📍 현재 위치: <b>${TERMINALS[best].name}</b>`, en: "You are at " + TERMINALS[best].en };
+  // 범위 안에서 가장 가까운 정류장 (대화동 출발지 + 공항 방면 중간 정류장)
   let ms = null, msD = Infinity;
-  for (const r of MID_STOPS.O){
+  for (const r of [ORIGIN_DH, ...MID_STOPS.O]){
     const d = distKm(la, lo, r[3], r[4]);
     if (d < msD){ msD = d; ms = r; }
   }
+  const dist = msD < 1 ? Math.round(msD * 1000) + "m" : msD.toFixed(1) + "km";
   if (ms && msD <= STOP_RADIUS_KM)
-    return { k: "s:" + ms[0], msg: `📍 현재 위치: <b>${ms[1]}</b> 근처 (공항 방면)`, en: "Near " + (ms[2] || ms[1]) + " · to Airport" };
-  return myStop === "dh"
-    ? { k: "dh", msg: `📍 공항 밖 → <b>대화동 출발</b>`, en: "Away from the airport → Daehwa-dong" }
-    : { k: myStop, msg: `📍 공항 밖 → ⭐ 내 정류장 <b>${stopLabel(myStop)}</b>`, en: "Away from the airport → My stop" };
+    return ms === ORIGIN_DH
+      ? { k: "dh", msg: `📍 가장 가까운 정류장: <b>대화동</b> (${dist})`, en: "Nearest stop: Daehwa-dong · " + dist }
+      : { k: "s:" + ms[0], msg: `📍 가장 가까운 정류장: <b>${ms[1]}</b> (${dist}, 공항 방면)`, en: "Nearest stop: " + (ms[2] || ms[1]) + " · " + dist + " · to Airport" };
+  if (myStop)
+    return { k: myStop, msg: `📍 범위 밖 → ⭐ 내 정류장 <b>${stopLabel(myStop)}</b>`, en: "No stop within range → My stop" };
+  return { k: DEFAULT_KEY, msg: `📍 범위 밖 → 기본 <b>인천공항 T2 출발</b>`, en: "No stop within range → Airport T2 (default)" };
 }
 
 let watchId = null, watchTimer = null, bestAcc = Infinity, lastLoc = null;
@@ -562,7 +580,7 @@ function locate(){
     stopWatch();
     if (manual) return;
     locMsg.innerHTML = (err.code === 1
-      ? "📍 위치 권한이 꺼져 있어 내 정류장을 표시합니다" : "📍 위치를 찾지 못해 내 정류장을 표시합니다")
+      ? "📍 위치 권한이 꺼져 있어 " + (myStop ? "내 정류장" : "기본(T2)") + "을 표시합니다" : "📍 위치를 찾지 못해 " + (myStop ? "내 정류장" : "기본(T2)") + "을 표시합니다")
       + en(err.code === 1 ? "Location permission off · showing My stop" : "Location unavailable · showing My stop");
   }, { enableHighAccuracy: true, maximumAge: 0, timeout: LOC_WATCH_MS });
   watchTimer = setTimeout(stopWatch, LOC_WATCH_MS);
